@@ -22,20 +22,20 @@ class Particle extends GameObject {
   _update(dt) {
     super._update(dt);
 
-    this._size += this._deltaSize * dt;
+    this._size += this._deltaSize * 1/dt;
   }
 
-  _draw(ctx) {
-    ctx._fillStyle("rgba(0,0,0,0.5");
-    ctx._fillRect(
+  _draw(ctx: CanvasRenderingContext2D) {
+    ctx.fs("rgba(0,0,0,0.5");
+    ctx.fr(
       this._position.x - this._size / 4,
       this._position.y + this._size / 4 - this._tileYOffset,
       this._size / 2,
       this._size / 2
     );
     
-    ctx._fillStyle(this._color);
-    ctx._fillRect(
+    ctx.fs(this._color);
+    ctx.fr(
       this._position.x - this._size / 2,
       this._position.y - this._size / 2 - this._verticalOffset,
       this._size,

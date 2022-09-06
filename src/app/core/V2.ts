@@ -1,6 +1,19 @@
+import { M, rand } from "./utils";
+
+
 class V2 {
   public x: number;
   public y: number;
+
+  //
+  constructor(x = 0, y = 0) {
+    this.x = x;
+    this.y = y;
+  }
+
+  static _rand() {
+    return new V2(rand(-1,1),rand(-1,1)      )
+  }
 
   static _add(a, b) {
     return new V2(a.x + b.x, a.y + b.y);
@@ -16,55 +29,31 @@ class V2 {
       : new V2(a.x * b, a.y * b);
   }
 
-  // static dot(a, b) {
-  //   return a.x * b.x + a.y * b.y;
-  // }
-
-  // static cross(a, b) {
-  //   return a.x * b.y - a.y * b.x;
-  // }
-
-  // static equals(a, b) {
-  //   return a.x === b.x && a.y === b.y;
-  // }
-
-  // static midPoint(a, b) {
-  //   return V2._scale(V2._add(a, b), 0.5);
-  // }
-
   static _distance(a, b) {
-    return Math.sqrt(Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2));
+    return M.sqrt(M.pow(b.x - a.x, 2) + M.pow(b.y - a.y, 2));
   }
 
-  static _fromAngle(r) {
-    return new V2(Math.cos(r), Math.sin(r));
+  static _fromAngle(r, length?) {
+    if (typeof length === 'undefined') {
+      length = 1;
+    }
+    return new V2(length * M.cos(r), length * M.sin(r));
   }
 
   // Rotates a vector around the origin. Shorthand for a rotation matrix
   static _rotateAroundOrigin(v, a) {
     return new V2(
-      v.x * Math.cos(a) - v.y * Math.sin(a),
-      v.x * Math.sin(a) + v.y * Math.cos(a)
+      v.x * M.cos(a) - v.y * M.sin(a),
+      v.x * M.sin(a) + v.y * M.cos(a)
     );
   }
 
-  // Rotates a vector around a given point.
-  // static _rotateAroundPoint(v, cp, a) {
-  //   var v2 = V2._subtract(v, cp);
-  //   return V2._add(
-  //     cp,
-  //     new V2(
-  //       v2.x * Math.cos(a) - v2.y * Math.sin(a),
-  //       v2.x * Math.sin(a) + v2.y * Math.cos(a)
-  //     )
-  //   );
-  // }
 
-  //
-  constructor(x = 0, y = 0) {
-    this.x = x;
-    this.y = y;
-  }
+
+  _heading() {
+    const h = Math.atan2(this.y, this.x);
+    return h;
+  };
 
   _copy() {
     return new V2(this.x, this.y);
@@ -72,33 +61,9 @@ class V2 {
 
   // get magnitude of a vector
   _magnitude() {
-    return Math.sqrt(this.x * this.x + this.y * this.y);
+    return M.sqrt(this.x * this.x + this.y * this.y);
   }
 
-  // lenSquared() {
-  //   return this.x * this.x + this.y * this.y;
-  // }
-
-  // get the normal of a vector
-  // normal() {
-  //   return new V2(-this.y, this.x);
-  // }
-
-  // get a point along v2-v1, t is % along line
-  // towards(v, t) {
-  //   var dVec = v._subtract(this);
-  //   var m = dVec.len();
-
-  //   return this._add(dVec._normalize()._scale(t * m));
-  // }
-
-  // angle(v) {
-  //   return Math.atan2(this.x * v.y - this.y * v.x, this.x * v.x + this.y * v.y);
-  // }
-
-  // angle2(vLeft, vRight) {
-  //   return vLeft._subtract(this).angle(vRight._subtract(this));
-  // }
 
   _normalize() {
     var m = this._magnitude();
@@ -109,14 +74,12 @@ class V2 {
   _limit(max) {
     if (this._magnitude() > max) {
       this._normalize();
-
       return this._scale(max);
     }
-
     return this;
   }
 
-  _add(v) {
+  _add(v:{x: number,y:number}) {
     this.x += v.x;
     this.y += v.y;
 
@@ -130,9 +93,6 @@ class V2 {
     return this;
   }
 
-  // _negative() {
-  //   return this._scale(-1);
-  // }
 
   _scale(sc) {
     this.x *= sc;
@@ -142,8 +102,8 @@ class V2 {
   }
 
   _floor() {
-    this.x = Math.floor(this.x);
-    this.y = Math.floor(this.y);
+    this.x = M.floor(this.x);
+    this.y = M.floor(this.y);
 
     return this;
   }

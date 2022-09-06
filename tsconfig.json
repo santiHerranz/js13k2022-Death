@@ -1,11 +1,47 @@
 {
   "compilerOptions": {
+    // "outDir": "./dist/",
+    // "sourceMap": true,
+    // "noImplicitAny": false,
+    // "target": "es6",
+    // "allowJs": true,
+    // "allowSyntheticDefaultImports": true,
     "outDir": "./dist/",
     "sourceMap": true,
     "noImplicitAny": false,
-    "target": "es6",
+    "target": "es2019",
     "allowJs": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "module": "esnext",
+    "lib": [
+      "esnext",
+      "DOM"
+    ],
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    // "isolatedModules": true,
+    "esModuleInterop": true,
+    // "noEmit": true,
+    // "noUnusedLocals": true,
+    // "noUnusedParameters": true,
+    // "noImplicitReturns": true,
+    "skipLibCheck": true
+    // "target": "es2019",
+    // "module": "esnext",
+    // "lib": ["esnext", "DOM"],
+    // "moduleResolution": "Node",
+    // "strict": true,
+    // "resolveJsonModule": true,
+    // "isolatedModules": true,
+    // "esModuleInterop": true,
+    // "noEmit": true,
+    // "noUnusedLocals": true,
+    // "noUnusedParameters": true,
+    // "noImplicitReturns": true,
+    // "skipLibCheck": true
   },
-  "include": ["src/**/*", "typedefs/*"]
+  // "include": ["src/**/*", "typedefs/*", "src/app/ZzFXMicro.min.js"]
+  "include": [
+    "src"
+  ]
 }

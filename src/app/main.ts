@@ -1,89 +1,142 @@
-import GameScene from "./components/scenes/GameScene";
-import TitleScene from "./components/scenes/TitleScene";
-import { rndRng } from "./core/utils";
-import { tilePregen } from "./components/tiles/tilePregen";
-import "./config";
-import { WIDTH, HEIGHT } from "./constants";
+'use strict';
 
-var _localStorageKey = "mjf_tls";
+import 'types-wm'
+import "./interface-canvas";
+import { WIDTH, HEIGHT, debug } from "./configuration";
+import GameScene from "./scenes/GameScene";
+import { createTiles } from "./components/createTiles";
+import { timeStep } from "./timer";
+import Level from "./Level";
+import IntroScene from "./scenes/IntroScene";
+import { sounds, UpdateAudio } from "./sound";
+import Human from "./entities/Human";
+import Semaphore from "./core/Semaphore";
+import { M } from "./core/utils";
+import V2 from "./core/V2";
+
 
 class _Game {
-  public _seed: number;
+
   public _currentTime: number;
   public _canvas: any;
-  public _ctx: any;
+  public _ctx: CanvasRenderingContext2D;
   public _scene: any;
-  public _started: boolean = false;
+  public _level: Level = new Level
   public _paused: boolean = false;
   public _animationFrame: any;
-  public _spritesheet: any;
 
-  // screens
-  public _$pz: HTMLElement; // pause
-  public _$tt: HTMLElement; // title
-  public _$gg: HTMLElement; // game over
+  public _spritesheets: any[] = [];
 
-  public _$k: HTMLElement;
-  public _$s: HTMLElement;
-  public _$kr: HTMLElement;
-  public _$sr: HTMLElement;
+  public _sem = new Semaphore()
 
-  public _storage: Storage = window.localStorage;
+  public _eventTimers = []
+  public _music: any;
+  public _playerRef: Human;
+  public _player: Human;
+
 
   constructor() {
-    // console.log(`GAME SEED: ${this.seed}`);
 
     this._currentTime = performance.now();
 
-    this._canvas = document.getElementById("c");
+    this._canvas = document.getElementById("game");
     this._ctx = this._canvas.getContext("2d");
 
     this._canvas.width = WIDTH;
     this._canvas.height = HEIGHT;
-    this._canvas.oncontextmenu = () => false;
 
-    // screens
-    this._$tt = document.getElementById("tt");
-    this._$pz = document.getElementById("pz");
-    this._$gg = document.getElementById("gg");
+    oncontextmenu = () => false;
+    onscroll = e => e.preventDefault();
 
-    this._$k = document.getElementById("k");
-    this._$s = document.getElementById("s");
-    this._$kr = document.getElementById("kr");
-    this._$sr = document.getElementById("sr");
+    this._loadSpritesheets(this).then(uid => {
+      this._intro();
+    });
 
-    // pause the game if the player gets distracted
-    window.onblur = () => this._pause();
+    sounds.BACKGROUND()
 
-    window.onkeydown = (e) => {
-      switch (e.code) {
-        case "KeyP":
-          if (this._scene._done) return;
-          if (this._paused) {
-            this._resume();
-          } else {
-            this._pause();
-          }
-          break;
-        case "Enter":
-          if (!this._started) {
-            this._disable();
-            this._started = true;
-            this._toggleScreens(null, this._$tt);
-            this._restart();
-          } else if (this._scene._done) {
-            this._restart();
-          }
-          break;
-      }
+
+    this._playerRef = new Human(new V2(0,0))
+    this._playerRef._outfitColor = "#f00"
+    this._playerRef._setParts()
+
+    this._player = new Human(new V2(0,0))
+    this._player._outfitColor = "#f00"
+    this._player._setParts()
+
+
+    onmouseup = e => {
+      this._scene._mouseClick();
     };
 
-    this._spritesheet = tilePregen();
 
-    // this._spritesheet.onload = () => {
-      this._scene = new TitleScene();
-      this._enable();
-    // };
+    if (document.monetization) {
+      document.monetization.addEventListener('monetizationstart', () => {
+        document.getElementById('exclusive').classList.remove('hidden')
+      })
+    }
+  }
+
+  _loadSpritesheets = (that) => {
+    return new Promise((resolve, reject) => {
+      (<_Game>that)._level._levelState.forEach((l, index) => {
+
+        const canvas = createTiles(l.c);
+        that._spritesheets.push(canvas);
+
+        // if (index == 0) {
+        //   let downloadLink;
+        //   document.body.appendChild(downloadLink = document.createElement('a'));
+        //   downloadLink.download = 'screenshot-'+ rand().toString(36).substr(2, 5) +'.png';
+        //   downloadLink.href = canvas.toDataURL('image/png').replace('image/png','image/octet-stream');
+        //   downloadLink.click();
+        // }
+      })
+
+      if (that._spritesheets.length > 0) {
+        resolve('OK');
+      }
+      else {
+        reject(Error("It broke"));
+      }
+    });
+  };
+
+
+
+  _scoreRescue(value: number) {
+    this._level._currentHumanRescued += value
+  }
+
+  _scoreDiamond(value: number) {
+    this._level._currentDiamonds += value
+  }
+  _scoreZombie(value: number) {
+    this._level._currentZombiesKilled += value
+  }
+  _scoreHuman(value: number) {
+    this._level._currentHumansKilled += value
+  }
+
+  _event(code: number, from: any, obj: any, t: number = .3, name: string = "") {
+    if (t == 0 || this._sem._ready(code + name)) {
+      if (this._scene instanceof GameScene)
+        (<GameScene>this._scene)._gameEventManager(code, from, obj)
+      t != 0 && this._sem._lock(code + name, t)
+    }
+
+  }
+
+  _collisionEvent(from: Human, to: Human, type?: number) {
+    if (!from._active || !to._active) return
+
+    if (this._scene instanceof GameScene)
+      (<GameScene>this._scene)._collisionEvent(from, to, type)
+  }
+
+  _intro() {
+    this._disable();
+    this._scene = new IntroScene(this._player);
+    this._enable()
   }
 
   _enable() {
@@ -97,75 +150,85 @@ class _Game {
   _animate(time) {
     this._animationFrame = requestAnimationFrame(this._animate.bind(this));
 
-    var dt = Math.max(0, time - this._currentTime);
+    var dt = M.max(0, time - this._currentTime);
+
+    //dt = dt / 300;
+    //dt = dt / 60;
+    //dt = dt / 30;
+    //dt = dt / 15;
+
     this._update(dt);
     this._currentTime = time;
-  }
 
-  _toggleScreens(on, off?) {
-    if (on) on.style.display = "flex";
-    if (off) off.style.display = "none";
-  }
-
-  _pause() {
-    if (!this._started) return;
-
-    this._disable();
-    this._toggleScreens(this._$pz);
-    this._paused = true;
-  }
-
-  _resume() {
-    this._currentTime = performance.now();
-    this._enable();
-    this._toggleScreens(null, this._$pz);
-    this._paused = false;
+    timeStep(dt)
   }
 
   _end() {
     this._disable();
+    this._levelUp();
+    this._enable()
+  }
 
-    var kills = this._scene._player._kills;
-    var time = this._scene._age;
+  _levelUp() {
+    this._disable();
+    this._level._playerHasSword = this._scene._player._hasSword
+    this._level._levelIncrement()
+    this._restart()
+    this._enable()
+  }
 
-    this._$k.innerText = kills;
-    this._$s.innerText = `${(time / 1000).toFixed(0)}s`;
-
-    this._toggleScreens(this._$gg, null);
-
-    var highscore = JSON.parse(
-      this._storage.getItem(_localStorageKey) || '{"kills": 0, "time": 0}'
-    );
-
-    this._$kr.innerText = `Record: ${highscore.kills}`;
-    this._$sr.innerText = `Record: ${(highscore.time / 1000).toFixed(0)}s`;
-
-    if (kills > highscore.kills) {
-      highscore.kills = kills;
-    }
-    if (time > highscore.time) {
-      highscore.time = time;
-    }
-
-    this._storage.setItem(
-      _localStorageKey,
-      JSON.stringify(highscore)
-    );
-
+  _levelDown() {
+    this._disable();
+    this._level._playerHasSword = this._scene._player._hasSword
+    this._level._levelDecrement()
+    this._restart()
+    this._enable()
   }
 
   _restart() {
-    this._toggleScreens(null, this._$gg);
-    this._seed = rndRng(0, 99999);
-    this._scene = new GameScene(this._spritesheet);
-    setTimeout(() => this._enable(), 50);
+    this._level._init()
+    this._scene = new GameScene(this._spritesheets[this._level._index], this._level, this._player);
+    this._scene._down = false
+    this._scene._died = false
   }
 
   _update(dt) {
+
     this._scene._update(dt);
+
+    UpdateAudio(dt)
+
+    this._sem._update(dt)
+
     if (this._scene._done) {
-      this._end();
+      this._scene._done = false
+
+      if (this._scene instanceof IntroScene)
+        this._restart()
+      else if (this._scene instanceof GameScene) {
+        if ((<GameScene>this._scene)._died) {
+          this._disable();
+
+          this._player = new Human()
+          this._player._outfitColor = "#f00"
+          this._player._hairColor = this._playerRef._hairColor
+          this._player._skinColor = this._playerRef._skinColor
+          this._player._setParts()
+
+          this._restart()
+          this._enable()
+        }
+        else
+          this._levelUp();
+      }
     }
+
+
+    if (this._scene._down) {
+      this._levelDown();
+      this._scene._down = false
+    }
+
     this._draw();
   }
 
@@ -173,13 +236,18 @@ class _Game {
     var { _ctx, _scene } = this;
 
     _ctx.clearRect(0, 0, WIDTH, HEIGHT);
-    _ctx._fillStyle("rgba(0,0,0,0.85)");
-    _ctx._fillRect(0, 0, WIDTH, HEIGHT);
+    _ctx.fs("rgba(0,0,0,1)");
+    _ctx.fr(0, 0, WIDTH, HEIGHT);
 
     _ctx.s();
     _scene._draw(_ctx);
+
     _ctx.r();
+
   }
+
 }
 
+
 export var Game = new _Game();
+

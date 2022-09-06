@@ -1,7 +1,9 @@
+import { M } from "./utils";
 import V2 from "./V2";
 
 class Animation {
   public _totalFrames: number;
+  public _currentTime: number = 0;
   public _currentFrame: number = 0;
   public _animations: any[] = [];
   public _repeats: boolean;
@@ -11,7 +13,8 @@ class Animation {
     this._totalFrames = tFrames;
     this._repeats = repeats;
 
-    ["body", "head", "sword", "shield", "legL", "legR"].forEach((key) => {
+  // "body", "head", "sword", "legL", "legR"
+    ["b", "h", "s", "lL", "lR"].forEach((key) => { 
       // component keyframes
       var cKeyFrames = config[key] || [{ f: 0 }, { f: tFrames }];
 
@@ -71,11 +74,14 @@ class Animation {
     return this._currentFrame === this._totalFrames - 1;
   }
 
-  _update() {
-    this._currentFrame += 1;
+  _update(dt) {
+
+    this._currentTime += 1 //dt/10;
+    this._currentFrame = M.floor(this._currentTime)
 
     if (this._currentFrame > this._totalFrames - 1) {
       this._currentFrame = 0;
+      this._currentTime = 0;
     }
   }
 }

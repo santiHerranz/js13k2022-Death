@@ -1,6 +1,9 @@
+import { M, PI, rand } from "./utils";
 import V2 from "./V2";
 
 class GameNode {
+  public _a_GAMENODE: string;
+
   public _children: GameNode[] = [];
   public _position: V2 = new V2();
   public _z: number = 0;
@@ -8,40 +11,39 @@ class GameNode {
   public _rv: number = 0;
   public _active: boolean = true;
   public _parent: GameNode;
-  public _id: number = Math.floor(Math.random() * 9999);
+  public _id: string = ""+ M.floor(rand() * 9999);
+  public _type: number ;
 
   _globalPosition() {
     var pos = this._position._copy();
     var parent = this._parent;
     while (parent) {
       pos = V2._rotateAroundOrigin(pos, parent._rotation)
-      pos._add(parent._position);
+      pos._add(parent._position); // test ._add(new V2(0, 0.0001))
       parent = parent._parent;
     }
-
     return pos;
   }
 
   _globalAngle() {
-    var r = this._rotation;
+    var value = this._rotation;
     var parent = this._parent;
     while (parent) {
-      r += parent._rotation;
+      value += parent._rotation;
       parent = parent._parent;
     }
-
-    return r;
+    return value;
   }
 
   _globalZ() {
-    var r = this._z;
+    var value = this._z;
     var parent = this._parent;
     while (parent) {
-      r += parent._z;
+      value += parent._z;
       parent = parent._parent;
     }
 
-    return r;
+    return value;
   }
 
   _addChild(child) {
@@ -50,7 +52,8 @@ class GameNode {
   }
 
   _update(dt) {
-    this._rotation += this._rv;
+
+    this._rotation += this._rv * dt;
 
     var length = this._children.length;
     while (length--) {
@@ -63,21 +66,34 @@ class GameNode {
     }
   }
 
-  _draw(ctx) {
+  _draw(ctx: CanvasRenderingContext2D) {
     var length = this._children.length;
 
     if (length === 0) {
       return;
     }
     ctx.s();
-    ctx._translate(this._position.x, this._position.y - this._z);
-    ctx.rotate(this._rotation);
+    ctx.tr(this._position.x, this._position.y - this._z);
+    ctx.rot(this._rotation);
 
     while (length--) {
       this._children[length]._draw(ctx);
     }
+
+
     ctx.r();
+
   }
+
+  _renderShadow(ctx:CanvasRenderingContext2D) {
+    ctx.s()
+    ctx.fs("rgba(0,0,0,0.5");
+    ctx.bp()
+    ctx.ellipse(0, 12 + this._z, 10, 5, 0, 0, PI*2)
+    ctx.fill()
+    ctx.r()
+  }
+
 }
 
 export default GameNode;

@@ -25,6 +25,7 @@ module.exports = {
             toplevel: true,
             module: true,
             passes: 10,
+            keep_fargs: false,
             unsafe_arrows: true,
             unsafe: true,
             unsafe_comps: true,

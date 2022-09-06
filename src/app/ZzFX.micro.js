@@ -4,101 +4,21 @@
 
 // This is a tiny build of zzfx with only a zzfx function to play sounds.
 // You can use zzfxV to set volume.
-// There is a small bit of optional code to improve compatibility.
 // Feel free to minify it further for your own needs!
-var zzfx, zzfxV, zzfxX, zzfxR;
 
-// ZzFXMicro - Zuper Zmall Zound Zynth
-zzfxV = 0.3; // volume
-zzfx = ( // play sound
-  q = 1,
-  k = 0.05,
-  c = 220,
-  e = 0,
-  t = 0,
-  u = 0.1,
-  r = 0,
-  F = 1,
-  v = 0,
-  z = 0,
-  w = 0,
-  A = 0,
-  l = 0,
-  B = 0,
-  x = 0,
-  G = 0,
-  d = 0,
-  y = 1,
-  m = 0,
-  C = 0
-) => {
-  var b = 2 * Math.PI,
-    H = (v *= (500 * b) / zzfxR ** 2),
-    I = ((0 < x ? 1 : -1) * b) / 4,
-    D = (c *= ((1 + 2 * k * Math.random() - k) * b) / zzfxR),
-    Z = [],
-    g = 0,
-    E = 0,
-    a = 0,
-    n = 1,
-    J = 0,
-    K = 0,
-    f = 0,
-    p,
-    h;
-  e = 99 + zzfxR * e;
-  m *= zzfxR;
-  t *= zzfxR;
-  u *= zzfxR;
-  d *= zzfxR;
-  z *= (500 * b) / zzfxR ** 3;
-  x *= b / zzfxR;
-  w *= b / zzfxR;
-  A *= zzfxR;
-  l = (zzfxR * l) | 0;
-  for (h = (e + m + t + u + d) | 0; a < h; Z[a++] = f)
-    ++K % ((100 * G) | 0) ||
-      ((f = r
-        ? 1 < r
-          ? 2 < r
-            ? 3 < r
-              ? Math.sin((g % b) ** 3)
-              : Math.max(Math.min(Math.tan(g), 1), -1)
-            : 1 - (((((2 * g) / b) % 2) + 2) % 2)
-          : 1 - 4 * Math.abs(Math.round(g / b) - g / b)
-        : Math.sin(g)),
-      (f =
-        (l ? 1 - C + C * Math.sin((2 * Math.PI * a) / l) : 1) *
-        (0 < f ? 1 : -1) *
-        Math.abs(f) ** F *
-        q *
-        zzfxV *
-        (a < e
-          ? a / e
-          : a < e + m
-          ? 1 - ((a - e) / m) * (1 - y)
-          : a < e + m + t
-          ? y
-          : a < h - d
-          ? ((h - a - d) / u) * y
-          : 0)),
-      (f = d
-        ? f / 2 +
-          (d > a ? 0 : ((a < h - d ? 1 : (h - a) / d) * Z[(a - d) | 0]) / 2)
-        : f)),
-      (p = (c += v += z) * Math.sin(E * x - I)),
-      (g += p - p * B * (1 - ((1e9 * (Math.sin(a) + 1)) % 2))),
-      (E += p - p * B * (1 - ((1e9 * (Math.sin(a) ** 2 + 1)) % 2))),
-      n && ++n > A && ((c += w), (D += w), (n = 0)),
-      !l || ++J % l || ((c = D), (v = H), (n = n || 1));
-  q = zzfxX.createBuffer(1, h, zzfxR);
-  q.getChannelData(0).set(Z);
-  c = zzfxX.createBufferSource();
-  c.buffer = q;
-  c.connect(zzfxX.destination);
-  c.start();
-  return c;
-};
-zzfxX = new (window.AudioContext || webkitAudioContext) // audio context
-zzfxR = 44100; // sample rate
-export default zzfx;
+'use strict';
+export let zzfx,zzfxV,zzfxX
+
+// ZzFXMicro - Zuper Zmall Zound Zynth - v1.1.8 ~ 884 bytes minified
+zzfxV=.3    // volume
+zzfx=       // play sound
+(p=1,k=.05,b=220,e=0,r=0,t=.1,q=0,D=1,u=0,y=0,v=0,z=0,l=0,E=0,A=0,F=0,c=0,w=1,m=0,B=0)=>{let
+M=Math,R=44100,d=2*M.PI,G=u*=500*d/R/R,C=b*=(1-k+2*k*M.random(k=[]))*d/R,g=0,H=0,a=0,n=1,I=0
+,J=0,f=0,x,h;e=R*e+9;m*=R;r*=R;t*=R;c*=R;y*=500*d/R**3;A*=d/R;v*=d/R;z*=R;l=R*l|0;for(h=e+m+
+r+t+c|0;a<h;k[a++]=f)++J%(100*F|0)||(f=q?1<q?2<q?3<q?M.sin((g%d)**3):M.max(M.min(M.tan(g),1)
+,-1):1-(2*g/d%2+2)%2:1-4*M.abs(M.round(g/d)-g/d):M.sin(g),f=(l?1-B+B*M.sin(d*a/l):1)*(0<f?1:
+-1)*M.abs(f)**D*p*zzfxV*(a<e?a/e:a<e+m?1-(a-e)/m*(1-w):a<e+m+r?w:a<h-c?(h-a-c)/t*w:0),f=c?f/
+2+(c>a?0:(a<h-c?1:(h-a)/c)*k[a-c|0]/2):f),x=(b+=u+=y)*M.cos(A*H++),g+=x-x*E*(1-1E9*(M.sin(a)
++1)%2),n&&++n>z&&(b+=v,C+=v,n=0),!l||++I%l||(b=C,u=G,n=n||1);p=zzfxX.createBuffer(1,h,R);p.
+getChannelData(0).set(k);b=zzfxX.createBufferSource();b.buffer=p;b.connect(zzfxX.destination
+);b.start();return b};zzfxX=new (window.AudioContext||webkitAudioContext) // audio context

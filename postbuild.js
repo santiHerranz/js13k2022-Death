@@ -1,8 +1,18 @@
 const fs = require('fs')
 const archiver = require('archiver')
 
-fs.unlinkSync('./dist/main.js')
-fs.unlinkSync('./dist/main.css')
+// fs.unlinkSync('./dist/main.js')
+// fs.unlinkSync('./dist/main.css')
+
+// fs.unlink('./dist/main.js',function(err){
+//   if(err) throw err;
+//   console.log('File deleted!');
+// });
+// fs.unlink('./dist/main.css',function(err){
+//   if(err) throw err;
+//   console.log('File deleted!');
+// });
+
 
 let output = fs.createWriteStream('./dist/build.zip')
 let archive = archiver('zip', {
