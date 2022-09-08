@@ -17,6 +17,7 @@ import GameScene, { _zombieSpawnerSafeDistance } from "../scenes/GameScene";
 import { Control } from "./Control";
 import { debug, getRandomColor, HumanColors } from "../configuration";
 import { TileType } from "../components/createTiles";
+import Zombie from "./Zombie";
 
 
 export default class Human extends GameObject {
@@ -25,6 +26,8 @@ export default class Human extends GameObject {
   public _skinColor: string
   public _hairColor: string
   public _bloodColor: string = HumanColors._bloodColor;
+  public _eyeColor: string = HumanColors._eyeColor
+  public _pupileColor: string = HumanColors._pupileColor
 
   public _sizeHead: V2 = new V2(16, 18);
   public _sizeHeadHair: V2 = new V2(1, rand(15, 20));
@@ -56,6 +59,7 @@ export default class Human extends GameObject {
 
   public _tileYOffset: number = 0;
 
+  public _strength: number = 4; // sword damage divisor
 
 
   public _hasKey: boolean = false
@@ -70,7 +74,8 @@ export default class Human extends GameObject {
 
   public _stunTimer: Timer = new Timer;
 
-  
+  public _hpIndicatorColor = "#00ff00";
+
 
   get _verticalOffset() {
     return this._tileYOffset + this._z;
@@ -98,7 +103,6 @@ export default class Human extends GameObject {
     this._currentAnim = this._idleAnim;
 
     this._setColors();
-
   }
 
   _setColors() {
@@ -235,6 +239,9 @@ export default class Human extends GameObject {
     newHead._skinColor = this._head._skinColor;
     newHead._bloodColor = this._head._bloodColor;
     newHead._lifeSpan = 3000;
+    
+    newHead._drawMouth = (ctx) => {this._drawMouth(ctx)}
+
 
     var newBody = new HumanBody(
       this._position._copy(),
@@ -254,6 +261,11 @@ export default class Human extends GameObject {
     scene._addParticle(newHead);
     scene._addParticle(newBody);
 
+  }
+  
+  
+  public _drawMouth(ctx: CanvasRenderingContext2D) {
+    this._head._drawMouth(ctx)
   }
 
 
@@ -538,12 +550,43 @@ export default class Human extends GameObject {
         }
       }
 
+
+
+
+      if (Game._scene instanceof GameScene && this._hp < 90) {
+
+        if (!this._facingRight) {
+          ctx.scale(-1, 1);
+        }
+
+        ctx.lineWidth = 20 * 0.1;
+        let width = 20;
+        let offsetY = 20 * 1.5;
+
+        ctx.bp();
+        ctx.ss("#fff");
+        ctx.mt(0 - width / 2, 0 - offsetY);
+        ctx.lt(0 + width / 2, 0 - offsetY);
+        ctx.stroke();
+
+        ctx.bp();
+        ctx.strokeStyle = this._hpIndicatorColor;
+        ctx.mt(0 - width / 2, 0 - offsetY);
+        ctx.lt(0 - width / 2 + width * (this._hp / this._maxHp), 0 - offsetY); // M.abs(M.cos(time/1))*100 
+        ctx.stroke();
+       }
+
+
       ctx.r();
 
     }
 
 
   }
+
+
+
+
 }
 
 

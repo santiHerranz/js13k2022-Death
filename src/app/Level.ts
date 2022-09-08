@@ -166,11 +166,11 @@ export default class Level {
 
         [   // Level 6 - 
             30, 30, // grid x,y
-            10, 10, // start tile and player at x+1,y-1
-            5, 3, // exit tile
-            5, 3, // lock tile
-            15, 10, // key tile
-            8, 8, // sword spawner tile
+            7, 14, // start tile and player at x+1,y-1
+            13, 13, // exit tile
+            4, 4, // lock tile
+            25, 4, // key tile
+            11, 24, // sword spawner tile
             [10, 15, 30], // zombies
             20, // humans
             5, // hearts
@@ -184,7 +184,7 @@ export default class Level {
             16, 16, // exit tile
             4, 16, // lock tile
             16, 4, // key tile
-            10, 10, // sword spawner tile
+            12, 12, // sword spawner tile
             [20, 20, 40], // zombies
             30, // humans
             10, // hearts

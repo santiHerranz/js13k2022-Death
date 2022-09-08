@@ -3,6 +3,7 @@ import Emitter from "../core/Emitter";
 import V2 from "../core/V2";
 import { time, Timer } from "../timer";
 import { M, PI, rand } from "../core/utils";
+import { HumanColors } from "../configuration";
 
 class HumanHead extends BodyPart {
 
@@ -12,6 +13,12 @@ class HumanHead extends BodyPart {
   public _blinkTimer: Timer;
   public _breathTimer: Timer;
   public _isDead: boolean = false;
+  public _eyeColor: string = HumanColors._eyeColor
+  public _pupileColor: string = HumanColors._pupileColor
+
+  public _mouthTimer: Timer = new Timer(.1);
+  public _breathScale: number = 1;
+
 
   constructor(p, size, colors?) {
     super(p, size);
@@ -21,12 +28,13 @@ class HumanHead extends BodyPart {
       this._skinColor = colors._skinColor
       this._hairColor = colors._hairColor
       this._bloodColor = colors._bloodColor
+      this._eyeColor = colors._eyeColor
+      this._pupileColor = colors._pupileColor
     }
 
     this._blinkTimer = new Timer;
     this._breathTimer = new Timer(1);
   }
-
 
   _update(dt: any): void {
 
@@ -46,6 +54,9 @@ class HumanHead extends BodyPart {
     // regular breath
     if (this._breathTimer.elapsed())
       this._breathTimer.set(rand(1.5, 3));
+
+    if (this._mouthTimer.elapsed())
+      this._mouthTimer.set(rand(.2,.8));
 
     super._update(dt)
   }
@@ -111,28 +122,15 @@ class HumanHead extends BodyPart {
     if (this._isDead)
       blinkScale = .2
 
-    let breathScale = .3 + .3 * M.cos(this._breathTimer.p100() * PI * 2);
+    this._breathScale = .3 + .3 * M.cos(this._breathTimer.p100() * PI * 2);
     if (this._isDead)
-      breathScale = -.4
+      this._breathScale = -.4
 
     // mouth
     // let _openMouth = 1.2
     // if (this._isDead) _openMouth = .2
 
-    ctx.fs("#000");
-    ctx.bp();
-    ctx.lw(.1)
-    //ctx.setLineDash([1, 1]);
-    //ctx.ellipse(this._size.x * 3 / 9, -this._size.y/8, 1.5, _openMouth, 0, 0, PI * 2);  // option 1
-    // ctx.mt(this._size.x * 3 / 9 - 2 * blinkScale, -this._size.y / 8)
-    // ctx.lt(this._size.x * 3 / 9 + 2 * blinkScale, -this._size.y / 8)
-    ctx.s()
-    ctx.tr(this._size.x * 3 / 9 , -this._size.y / 8 -2)
-    if (this._isDead) ctx.rot(PI)
-    ctx.arc(0,0, 2, .8 +breathScale, PI -breathScale)
-    ctx.cp();
-    ctx.fill();
-    ctx.r()
+    this._drawMouth(ctx);
 
 
 
@@ -164,28 +162,66 @@ class HumanHead extends BodyPart {
 
 
 
-    ctx.ss("#000");
-    ctx.fs("#000");
-    // ctx.lw(0);
-    const eyeSize = this._size.y / 20;
-    // right eye
-    ctx.bp();
-    ctx.ellipse(this._size.x / 2.25, -this._size.y + this._size.y / 2, eyeSize * .8, eyeSize * 2.7 * blinkScale, 0, 0, PI * 2);
-    ctx.cp();
-    ctx.fill();
-
-    // left eye
-    ctx.bp();
-    ctx.ellipse(this._size.x / 4, -this._size.y + this._size.y / 2, eyeSize * 1.1, eyeSize * 3 * blinkScale, 0, 0, PI * 2);
-    ctx.cp();
-    ctx.fill();
+    this._drawEyes(ctx, blinkScale);
 
     ctx.r();
 
   }
 
 
+  public _drawMouth(ctx: CanvasRenderingContext2D) {
+    ctx.fs("#000");
+    ctx.bp();
+    ctx.lw(.1);
+    //ctx.setLineDash([1, 1]);
+    //ctx.ellipse(this._size.x * 3 / 9, -this._size.y/8, 1.5, _openMouth, 0, 0, PI * 2);  // option 1
+    // ctx.mt(this._size.x * 3 / 9 - 2 * blinkScale, -this._size.y / 8)
+    // ctx.lt(this._size.x * 3 / 9 + 2 * blinkScale, -this._size.y / 8)
+    ctx.s();
+    ctx.tr(this._size.x * 3 / 9, -this._size.y / 8 - 2);
+    if (this._isDead)
+      ctx.rot(PI);
+    ctx.arc(0, 0, 2, .8 + this._breathScale, PI - this._breathScale);
+    ctx.cp();
+    ctx.fill();
+    ctx.r();
+  }
 
+
+
+
+
+  private _drawEyes(ctx: CanvasRenderingContext2D, blinkScale: number) {
+    ctx.ss("#000");
+    // ctx.lw(0);
+    const eyeSize = this._size.y / 20;
+    // right eye
+    ctx.bp();
+    ctx.fs(this._eyeColor);
+    ctx.ellipse(this._size.x / 2.25, -this._size.y + this._size.y / 2, eyeSize * .8, eyeSize * 2.7 * blinkScale, 0, 0, PI * 2);
+    ctx.cp();
+    ctx.fill();
+
+    ctx.bp();
+    ctx.fs(this._pupileColor);
+    ctx.ellipse(.5+this._size.x / 2.25, -this._size.y + this._size.y / 2, eyeSize/2 * .8, eyeSize/2 * 2.7 * blinkScale, 0, 0, PI * 2);
+    ctx.cp();
+    ctx.fill();
+
+    // left eye
+    ctx.bp();
+    ctx.fs(this._eyeColor);
+    ctx.ellipse(this._size.x / 4, -this._size.y + this._size.y / 2, eyeSize * 1.1, eyeSize * 3 * blinkScale, 0, 0, PI * 2);
+    ctx.cp();
+    ctx.fill();
+
+    ctx.bp();
+    ctx.fs(this._pupileColor);
+    ctx.ellipse(.5+this._size.x / 4, -this._size.y + this._size.y / 2, eyeSize/2 * 1.1, eyeSize/2 * 3 * blinkScale, 0, 0, PI * 2);
+    ctx.cp();
+    ctx.fill();
+    
+  }
 
 }
 

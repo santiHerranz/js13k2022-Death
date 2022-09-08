@@ -60,6 +60,8 @@ export class Camera {
 
   _update(dt) {
     this._shakeValue = M.max(this._shakeValue - dt, 0);
+
+
     this._zoomTo(this._distance + (this._targetDistance - this._distance) * 0.05);
   }
 

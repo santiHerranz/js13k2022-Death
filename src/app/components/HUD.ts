@@ -7,6 +7,7 @@ import Level from "../Level";
 import { c2i, M, PI } from "../core/utils";
 import { Timer } from "../timer";
 import HumanHead from "../entities/HumanHead";
+import Zombie from "../entities/Zombie";
 
 let _barWidth = WIDTH/4
 
@@ -33,6 +34,12 @@ class HUD extends GameObject {
     this._humanIcon._hairColor = getRandomColor(); // HumanColors._hairColor[Math.random() * HumanColors._hairColor.length>>0];
 
     this._zombieIcon = new HumanHead(new V2, new V2(32, 36), ZombieColors)
+
+    this._zombieIcon._drawMouth = (ctx) => {
+      let z = new Zombie(new V2)
+      z._head._size = new V2(32, 36)
+      z._head._drawMouth(ctx)
+    }
 
   }
 
@@ -69,7 +76,7 @@ class HUD extends GameObject {
 
     ctx.textAlign = "right";
     let x = WIDTH - WIDTH/4, y = 4
-    ctx.st("💎 " + (level._currentDiamonds) + "/" + scene._level._maxDiamonds, x + 220, 35, 26);
+    ctx.st("💎 " + (level._currentDiamonds) + "/" + scene._level._maxDiamonds, x + 180, 35, 26);
 
 
     if (this._showFinal) {
@@ -137,7 +144,7 @@ class HUD extends GameObject {
 
 
 
-    debug && showDebugValues(ctx);
+    //debug && showDebugValues(ctx);
   }
 
 

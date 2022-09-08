@@ -58,6 +58,12 @@ class IntroScene extends Scene {
       let s = 20
       ctx.st("Use arrow keys or WASD to move", WIDTH / 2, HEIGHT / 2 - 4 * h, s);
       ctx.st("Click or Space to action", WIDTH / 2, HEIGHT / 2 - 3 * h, s);
+      if (Game._monetization) {
+        ctx.st("Hello Coil member!", WIDTH / 2, HEIGHT / 2 - 1 * h, s);
+        ctx.st("Click on player to change color", WIDTH / 2, HEIGHT / 2 + 1 * h, s);
+      } else {
+        ctx.st("Coil members can change player colors", WIDTH / 2, HEIGHT / 2 - 1 * h, s);
+      }
 
       ctx.st("Press Enter to start", WIDTH / 2, HEIGHT / 2 + HEIGHT / 2.5, 40 + 3 * M.cos(this._HUD._bTimer.p100()));
 
@@ -72,6 +78,9 @@ class IntroScene extends Scene {
     // this._player._setParts()
     this._player._position = new V2(-100, 30)
     this._addChild(this._player);
+
+
+    // this._addChild(new Zombie(new V2(50, 30)))
 
   }
 
@@ -102,6 +111,9 @@ class IntroScene extends Scene {
       this._player._position.y -= this._gravity
     }
 
+
+    
+
   }
 
   _draw(ctx: CanvasRenderingContext2D) {
@@ -121,7 +133,9 @@ class IntroScene extends Scene {
 
 
   _mouseClick() {
-    this._changeColor();
+    super._mouseClick()
+    if (Game._monetization)    
+      this._changeColor();
   }
 
 

@@ -10,6 +10,7 @@ import TileMap from "../components/TileMap";
 import Human from "../entities/Human";
 import Input from "../core/InputKeyboard";
 import { sounds } from "../sound";
+import { Game } from "../main";
 
 export default class Scene extends GameObject {
 
@@ -38,20 +39,26 @@ export default class Scene extends GameObject {
     let k = 1
     let kz = 10
 
-    // if (Input._PageUp && !this._cheat) {
-    //   setTimeout(() => {
-    //     this._done = true
-    //     this._cheat = false
-    //   }, 100);
-    //   this._cheat = true
-    // }
-    // if (Input._PageDown && !this._cheat) {
-    //   setTimeout(() => {
-    //     this._down = true
-    //     this._cheat = false
-    //   }, 100);
-    //   this._cheat = true
-    // }
+
+    // COMMENT BEFORE RELEASE
+    if (Input._PageUp && !this._cheat) {
+      setTimeout(() => {
+        this._done = true
+        this._cheat = false
+      }, 100);
+      this._cheat = true
+    }
+    if (Input._PageDown && !this._cheat) {
+      setTimeout(() => {
+        this._down = true
+        this._cheat = false
+      }, 100);
+      this._cheat = true
+    }
+
+
+    if (Input._KeyM) 
+      Game._musicEnabled != Game._musicEnabled
 
     // up/down
     if (Input._KeyUp) {
@@ -70,14 +77,14 @@ export default class Scene extends GameObject {
     }
 
     // attack
-    if ((Input._Click || Input._Space) && this._player._canAttack()) {
+    if ((Game._Click || Input._Space) && this._player._canAttack()) {
       sounds.ATTACK()
       this._player._attack();
     }
 
     // Jump
-    if (!this._player._hasSword && ((Input._Click || Input._Space) && this._player._canJump() )) {
-      sounds.JUMP
+    if (!this._player._hasSword && ((Game._Click || Input._Space) && this._player._canJump() )) {
+      sounds.JUMP()
       this._player._zv += kz;
       this._player._a._scale(1.2)
     }

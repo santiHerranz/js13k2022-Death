@@ -19,6 +19,14 @@ body {
   padding-top: 0px;
 }
 
+#btnAudio {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  font: 24px serif
+}
+
 #window {
   margin: 0 auto;
   position: relative;

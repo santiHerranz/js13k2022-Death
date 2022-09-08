@@ -8,12 +8,14 @@ import { createTiles } from "./components/createTiles";
 import { timeStep } from "./timer";
 import Level from "./Level";
 import IntroScene from "./scenes/IntroScene";
-import { sounds, UpdateAudio } from "./sound";
+import { audioMode, sounds, UpdateAudio } from "./sound";
 import Human from "./entities/Human";
 import Semaphore from "./core/Semaphore";
 import { M } from "./core/utils";
 import V2 from "./core/V2";
+import localStorage from './localStorage';
 
+const btnAudio = document.getElementById("btnAudio");
 
 class _Game {
 
@@ -30,10 +32,15 @@ class _Game {
   public _sem = new Semaphore()
 
   public _eventTimers = []
-  public _music: any;
   public _playerRef: Human;
   public _player: Human;
 
+  public _musicEnabled: boolean = false;
+
+  private musicStarted: boolean = false;
+  _monetization: boolean;
+  _audioMode: number;
+  _Click: boolean;
 
   constructor() {
 
@@ -48,32 +55,58 @@ class _Game {
     oncontextmenu = () => false;
     onscroll = e => e.preventDefault();
 
+
+    // Mosuse Click
+    const mouseHandler = (v: boolean) => (e: MouseEvent) => {
+      this._Click = v;
+    }
+    this._canvas.addEventListener("mousedown", mouseHandler(true));
+    this._canvas.addEventListener("mouseup", mouseHandler(false));
+
+
+    // Set audio options
+    btnAudio.addEventListener("click", () => {
+      this._audioMode++
+      this.setAudioMode();
+    })
+    this._audioMode = localStorage.get("audioMode", 0)
+    this.setAudioMode()
+
+
     this._loadSpritesheets(this).then(uid => {
       this._intro();
     });
 
-    sounds.BACKGROUND()
 
-
-    this._playerRef = new Human(new V2(0,0))
+    // Player consistency
+    this._playerRef = new Human(new V2(0, 0))
     this._playerRef._outfitColor = "#f00"
-    this._playerRef._setParts()
+    this._playerRef._skinColor = "#E0AC69";
+    this._playerRef._hairColor = "#555";
 
-    this._player = new Human(new V2(0,0))
+    this._player = new Human(new V2(0, 0))
     this._player._outfitColor = "#f00"
+    this._player._skinColor = "#E0AC69";
+    this._player._hairColor = "#555";
     this._player._setParts()
 
 
-    onmouseup = e => {
-      this._scene._mouseClick();
-    };
+
+    // this._canvas.onmouseup = e => {
+    //   this._scene._mouseClick();
+    // };
 
 
     if (document.monetization) {
       document.monetization.addEventListener('monetizationstart', () => {
-        document.getElementById('exclusive').classList.remove('hidden')
+        console.log('monetizationstart')
+        this._monetization = true
       })
     }
+
+
+    sounds.BACKGROUND()
+
   }
 
   _loadSpritesheets = (that) => {
@@ -101,7 +134,24 @@ class _Game {
     });
   };
 
+  private setAudioMode() {
+    if (this._audioMode < 0 || this._audioMode > 2)
+      this._audioMode = 0;
 
+    let icon: string;
+    if (this._audioMode == 0) { sounds.CLICK(); icon = "🎵"; btnAudio.title = "Sound ON Music ON"; }
+    if (this._audioMode == 1) { sounds.CLICK(); icon = "🙉"; btnAudio.title = "Sound ON Music OFF"; }
+    if (this._audioMode == 2) { icon = "🔇"; btnAudio.title = "Silence"; }
+
+    localStorage.save("audioMode", this._audioMode);
+
+    btnAudio.innerText = icon;
+
+    audioMode.mode = this._audioMode
+  }
+
+  _mouseClick() {
+  }
 
   _scoreRescue(value: number) {
     this._level._currentHumanRescued += value
@@ -186,6 +236,7 @@ class _Game {
   }
 
   _restart() {
+
     this._level._init()
     this._scene = new GameScene(this._spritesheets[this._level._index], this._level, this._player);
     this._scene._down = false
@@ -203,8 +254,14 @@ class _Game {
     if (this._scene._done) {
       this._scene._done = false
 
-      if (this._scene instanceof IntroScene)
+      if (this._scene instanceof IntroScene) {
+
+        let plays = localStorage.get("plays", 0)
+        localStorage.save("plays", ++plays)
+        
         this._restart()
+
+      }
       else if (this._scene instanceof GameScene) {
         if ((<GameScene>this._scene)._died) {
           this._disable();
@@ -245,6 +302,15 @@ class _Game {
     _ctx.r();
 
   }
+
+
+
+
+
+
+
+
+
 
 }
 

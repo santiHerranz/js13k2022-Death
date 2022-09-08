@@ -74,10 +74,7 @@ class GameScene extends Scene {
     this._interactiveLayer = new GameObject();
 
     this._loadTileMap(this).then(uid => {
-
-      // setTimeout(() => {
       this._init()
-      // }, 50);
     });
 
   }
@@ -98,7 +95,7 @@ class GameScene extends Scene {
 
   _init() {
 
-    //if (debug) { this._cam._targetDistance = 2*M.sqrt(this._level._tiles.x*TILESIZE.x*this._level._tiles.y*TILESIZE.y) }
+    if (debug) { this._cam._targetDistance = 1500  } // 10*M.sqrt(this._level._tiles.x*TILESIZE.x*this._level._tiles.y*TILESIZE.y
 
 
 
@@ -572,6 +569,19 @@ class GameScene extends Scene {
       case GameEvent.zombieHitHuman:
         if (obj._active) {
           obj._hp = M.max(0, obj._hp - 25);
+
+          if (obj._hp == 0) {
+            // Human transform Zombie
+            let z = new Zombie(obj._position._copy())
+            z._hairColor = obj._hairColor
+            z._z = 20
+            z._v._add(V2._rand()._scale(rand(.1, .5)))
+            z._hasSword = false
+            this._zombies.push(z)
+            this._interactiveLayer._addChild(z);
+            obj._hp = 0
+          }
+
         }
         break;
 
@@ -581,7 +591,7 @@ class GameScene extends Scene {
 
       case GameEvent.playerHitHuman:
       case GameEvent.playerHitZombie:
-        obj._hp = M.max(0, obj._hp - player._sword._damage);
+        obj._hp = M.max(0, obj._hp - player._sword._damage/obj._strength);
         if (obj._active && obj._hp <= 0) {
           sounds.HEADOFF()
           obj._diedBySword = true

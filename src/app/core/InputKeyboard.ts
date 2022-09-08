@@ -7,11 +7,11 @@ class InputKeyboard {
   public _PageUp: boolean;
   public _PageDown: boolean;
   public _Enter: boolean;
-  public _Click: boolean;
+  public _KeyM: boolean;
 
   constructor() {
     var handler = (v: boolean) => (e: KeyboardEvent) => {
-      //console.lengthog('InputKeyboard: '+ e.code)
+      //console.log('InputKeyboard: '+ e.code)
       switch (e.code) {
         case "ArrowRight":
         case "KeyD": this._KeyRight = v; break;
@@ -26,17 +26,13 @@ class InputKeyboard {
         case "Enter": this._Enter = v; break;
         case "PageUp": this._PageUp = v; break;
         case "PageDown": this._PageDown = v; break;
+        case "KeyM": this._KeyM = v; break;
 
       }
     }
     window.addEventListener("keydown", handler(true));
     window.addEventListener("keyup", handler(false));
-    
-    var mouseHandler = (v: boolean) => (e: KeyboardEvent) => {
-      this._Click = v;
-    }
-    window.addEventListener("mousedown", mouseHandler(true));
-    window.addEventListener("mouseup", mouseHandler(false));
+
   }
 }
 

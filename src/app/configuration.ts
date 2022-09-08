@@ -35,13 +35,17 @@ export function getRandomColor() {
 export const HumanColors = {
     _outfitColor: ["#00f"],
     _skinColor: ["#E3C199","#FCDFBE","#C6936E","#9E6A3E","#5A463B"], // "#E0AC69"
-    _bloodColor: "#db0000"
+    _bloodColor: "#db0000",
+    _eyeColor: "#fff",
+    _pupileColor: "#000"
 }
 
 export const ZombieColors = {
     _outfitColor: ["#545943","#531F7C"],
     _skinColor: ["#308949"],
-    _bloodColor: "#262"
+    _bloodColor: "#262",
+    _eyeColor: "#fcc",
+    _pupileColor: "#f00"
 }
 
 
