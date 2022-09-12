@@ -4,13 +4,12 @@ import Input from "../core/InputKeyboard";
 import Scene from "../core/Scene";
 import { M } from "../core/utils";
 import V2 from "../core/V2";
-import Crate from "../entities/Crate";
-import Human from "../entities/Human";
 import Sword from "../entities/Sword";
-import Zombie from "../entities/Zombie";
 import { Game } from "../main";
 import { sounds } from "../sound";
-import { deltaTime, time, Timer } from "../timer";
+import { time } from "../timer";
+import localStorage from '../localStorage';
+import Zombie from "../entities/Zombie";
 
 class IntroScene extends Scene {
 
@@ -35,34 +34,39 @@ class IntroScene extends Scene {
 
 
       ctx.ta();
-      ctx.st("Escape from", WIDTH / 2 - 9, HEIGHT / 8 - HEIGHT / 18, WIDTH / 20, "Helvetica", "#ED1B23", "#fff");
-      ctx.st("DEATH HOLE", WIDTH / 2 - 9, HEIGHT / 8 + HEIGHT / 10, WIDTH / 8, "Helvetica", "#ED1B23", "#fff");
+      ctx.st("Escape from", WIDTH / 2 - 9, HEIGHT / 8 - HEIGHT / 18, WIDTH / 20, "sans-serif", "#ED1B23", "#fff");
+      ctx.st("DEATH HOLE", WIDTH / 2 - 9, HEIGHT / 8 + HEIGHT / 10, WIDTH / 8, "sans-serif", "#ED1B23", "#fff");
 
       // left ground
       ctx.fs("#896A44");
-      ctx.fr(0, HEIGHT - HEIGHT / 4, WIDTH / 2 - 100, HEIGHT / 3);
-      ctx.fr(WIDTH / 2 + 100, HEIGHT - HEIGHT / 4, WIDTH / 2 - 100, HEIGHT / 3);
+      ctx.fr(0, HEIGHT*3/4, WIDTH / 2 - 100, HEIGHT / 3);
+      ctx.fr(WIDTH / 2 + 100, HEIGHT*3/4, WIDTH / 2 - 100, HEIGHT / 3);
 
       // right ground
       ctx.fs("#438742");
-      ctx.fr(0, HEIGHT - HEIGHT / 4, WIDTH / 2 - 100, 50);
-      ctx.fr(WIDTH / 2 + 100, HEIGHT - HEIGHT / 4, WIDTH / 2 - 100, 50);
+      ctx.fr(0, HEIGHT*3/4, WIDTH / 2 - 100, 50);
+      ctx.fr(WIDTH / 2 + 100, HEIGHT*3/4, WIDTH / 2 - 100, 50);
 
       // manhole
       if (!this._started) {
         ctx.fs("#444");
-        ctx.fr(WIDTH / 2 - 100, HEIGHT - HEIGHT / 4, 200, 25);
+        ctx.fr(WIDTH / 2 - 100, HEIGHT*3/4, 200, 25);
       }
 
       let h = HEIGHT * 1 / 30
       let s = 20
       ctx.st("Use arrow keys or WASD to move", WIDTH / 2, HEIGHT / 2 - 4 * h, s);
       ctx.st("Click or Space to action", WIDTH / 2, HEIGHT / 2 - 3 * h, s);
+
       if (Game._monetization) {
-        ctx.st("Hello Coil member!", WIDTH / 2, HEIGHT / 2 - 1 * h, s);
-        ctx.st("Click on player to change color", WIDTH / 2, HEIGHT / 2 + 1 * h, s);
+        ctx.st("👋 Hello Coil member!", WIDTH*7/ 8, HEIGHT / 2 + 2 * h, 18);
+        ctx.st("Click on player", WIDTH*7/ 8, HEIGHT / 2 + 4 * h, 18);
+        ctx.st("to change color", WIDTH*7/ 8, HEIGHT / 2 + 5 * h, 18);
       } else {
-        ctx.st("Coil members can change player colors", WIDTH / 2, HEIGHT / 2 - 1 * h, s);
+        ctx.st("Coil members", WIDTH*7/ 8, HEIGHT / 2 + 3 * h, 18);
+        ctx.st("can change", WIDTH*7/ 8, HEIGHT / 2 + 4 * h, 18);
+        ctx.st("player colors", WIDTH*7/ 8, HEIGHT / 2 + 5 * h, 18);
+        ctx.st("and get extra powerups", WIDTH*7/ 8, HEIGHT / 2 + 6 * h, 18);
       }
 
       ctx.st("Press Enter to start", WIDTH / 2, HEIGHT / 2 + HEIGHT / 2.5, 40 + 3 * M.cos(this._HUD._bTimer.p100()));
@@ -79,8 +83,9 @@ class IntroScene extends Scene {
     this._player._position = new V2(-100, 30)
     this._addChild(this._player);
 
-
-    // this._addChild(new Zombie(new V2(50, 30)))
+    // let z = new Zombie(new V2(20, 30))
+    // z._Grow = 1
+    // this._addChild(z)
 
   }
 
@@ -91,13 +96,14 @@ class IntroScene extends Scene {
     this._HUD._update(dt)
 
     this._player._a = new V2(30, 0)
-    if (this._cam._vpRect.mid.x > this._player._position.x ){
-      this._cam._lookat = new V2(24 -time*100, -22);
-    } else 
-    this._player._a._reset()
+    if (this._cam._vpRect.mid.x > this._player._position.x) {
+      this._cam._lookat = new V2(24 - time * 100, -22);
+    } else
+      this._player._a._reset()
 
     if (Input._Space && this._player._canJump()) {
-      this._changeColor();
+      if (Game._monetization)
+        this._changeColor();
     }
 
     if (Input._Enter && !this._started) {
@@ -112,7 +118,7 @@ class IntroScene extends Scene {
     }
 
 
-    
+
 
   }
 
@@ -134,13 +140,16 @@ class IntroScene extends Scene {
 
   _mouseClick() {
     super._mouseClick()
-    if (Game._monetization)    
+    if (Game._monetization)
       this._changeColor();
+
+    localStorage.save("skinColor", Game._playerRef._skinColor)
+    localStorage.save("hairColor", Game._playerRef._hairColor)
   }
 
 
   private _changeColor() {
-    sounds.DIAMOMD();
+    sounds.DIAMOND();
     this._player._setColors();
     Game._playerRef._hairColor = this._player._hairColor;
     Game._playerRef._skinColor = this._player._skinColor;

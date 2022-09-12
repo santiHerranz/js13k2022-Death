@@ -19,10 +19,12 @@ class HumanSword extends BodyPart {
   _used(human: Human) {
     this._usedTimes += 1
     this._length = this._size.y - this._size.y / 2 * (this._usedTimes / this._maxUseTimes)
-    if (this._usedTimes > this._maxUseTimes) {
-      human._hasSword = false
-      this._length = this._size.y // restore original size
-      this._usedTimes = 0
+    if (this._usedTimes >= this._maxUseTimes) {
+      setTimeout(() => {
+        human._hasSword = false
+        this._length = this._size.y // restore original size
+        this._usedTimes = 0
+        }, 200);
     }
   }
 

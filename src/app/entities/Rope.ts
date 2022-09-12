@@ -23,16 +23,11 @@ class Rope extends GameObject {
             this._verticalOffset 
         );
 
-        //this._shouldRenderShadow && this._renderShadow(ctx);
-
         ctx.rot(this._rotation);
 
         // rope
-        ctx.lw(2);
-        ctx.fs("#5B3017");
-        ctx.fr(0, -this._size.y, this._size.x/2, this._size.y);
         ctx.fs("#875638");
-        ctx.fr(this._size.x / 2, -this._size.y, this._size.x/2, this._size.y);
+        ctx.fr(this._size.x / 2, -this._size.y, this._size.x, this._size.y);
 
         ctx.r();
     }

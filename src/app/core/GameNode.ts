@@ -1,3 +1,4 @@
+import { CharacterType } from "./GameEvent";
 import { M, PI, rand } from "./utils";
 import V2 from "./V2";
 
@@ -11,8 +12,8 @@ class GameNode {
   public _rv: number = 0;
   public _active: boolean = true;
   public _parent: GameNode;
-  public _id: string = ""+ M.floor(rand() * 9999);
-  public _type: number ;
+  public _id: string = ""+ M.floor(rand() * 9999)
+  public _type: number = CharacterType.human
 
   _globalPosition() {
     var pos = this._position._copy();

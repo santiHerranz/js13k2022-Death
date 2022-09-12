@@ -182,7 +182,6 @@ class GameObject extends GameNode {
     // turn opposite direction
     this._v._add(diffVec._scale(-1))
 
-    // TODO bound at the edge
   }
 
   _setYOff() {

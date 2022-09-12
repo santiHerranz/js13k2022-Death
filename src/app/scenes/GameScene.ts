@@ -1,7 +1,7 @@
 import BaseTile from "../components/BaseTile";
 import HUD from "../components/HUD";
 import TileMap from "../components/TileMap";
-import { debug, HEIGHT, HumanColors, mapDim, TILESIZE, WIDTH, ZombieColors } from "../configuration";
+import { BigZombieMaxHp, debug, getRandomColor, glassesColor, HEIGHT, HumanColors, mapDim, TILESIZE, WIDTH, ZombieColors } from "../configuration";
 import { Camera } from "../core/Camera";
 import GameObject from "../core/GameObject";
 import Input from "../core/InputKeyboard";
@@ -38,7 +38,6 @@ class GameScene extends Scene {
   public _diamonds: Crate[] = [];
   public _level: Level
 
-  public _randMoveTimer: Timer = new Timer(1);
   private _ropeTimer: Timer = new Timer;
 
   private _spriteSheet: HTMLCanvasElement;
@@ -87,15 +86,15 @@ class GameScene extends Scene {
       if (this._tileMap != undefined) {
         resolve('OK');
       }
-      else {
-        reject(Error("It broke"));
-      }
+      // else {
+      //   reject(Error("It broke"));
+      // }
     });
   }
 
   _init() {
 
-    if (debug) { this._cam._targetDistance = 1500  } // 10*M.sqrt(this._level._tiles.x*TILESIZE.x*this._level._tiles.y*TILESIZE.y
+    //if (debug) { this._cam._targetDistance = 1500 } // 10*M.sqrt(this._level._tiles.x*TILESIZE.x*this._level._tiles.y*TILESIZE.y
 
 
 
@@ -104,32 +103,25 @@ class GameScene extends Scene {
     this._addChild(this._tileMap);
 
 
-    // Mode:  Floor is lava
-    if (this._level._index == 6) {
-      for (let j = 0; j < mapDim.x; j++) {
-        for (let i = 0; i < mapDim.y; i++) {
-          if (i == 0 || i == mapDim.y - 1 || j == 0 || j == mapDim.x - 1) {
-            let blockTile = this._tileMap._getTile(new V2(j, i)._floor());
-            blockTile._tileType = TileType._LAVA
-            blockTile._height = 18
-            blockTile._fixed = true
-          }
-        }
-      }
+    // Init grow pickup
+    if (this._level._index > 6) {
+      let item = new Crate("🍄", randPlace())
+      item._z = 50
+      this._interactiveLayer._addChild(item);
     }
+
 
     const startTilePosition = new V2(this._level._startTilePos.x, this._level._startTilePos.y);
     let exitPlace, lockPlace, keyPlace
 
+    // set exit tile
+    exitPlace = this._level._exitTilePos
+    this._exitTile = this._tileMap._getTile(exitPlace)
+    this._exitTile._tileType = TileType._XTILE
+    this._exitTile._height = 30
+    this._exitTile._fixed = true
+
     if (!this._level._isEndGame) {
-
-
-      // set exit tile
-      exitPlace = this._level._exitTilePos
-      this._exitTile = this._tileMap._getTile(exitPlace)
-      this._exitTile._tileType = TileType._XTILE
-      this._exitTile._height = 30
-      this._exitTile._fixed = true
 
       // set lock tile
       lockPlace = this._level._lockTilePos
@@ -164,7 +156,7 @@ class GameScene extends Scene {
     // Start Tile
     this._startTile = this._tileMap._getTile(startTilePosition)
 
-    if (!this._level._isFirst) {
+    if (!this._level._isFirst && !this._level._isEndGame) {
 
       if (!this._level._isEndGame) this._startTile._height = -500
       this._startTile._fixed = true
@@ -188,7 +180,7 @@ class GameScene extends Scene {
 
     let startPlace: V2
     // create Player
-    // TODO When falling from up level, set
+    // When falling from up level
     if (this._level._lastIndex > this._level._index)
       startPlace = i2c(new V2(exitPlace.x + 2.5, exitPlace.y + .5));
     else
@@ -248,7 +240,24 @@ class GameScene extends Scene {
     this._theRope = null
 
 
-    this._level._isEndGame && sounds.GAMEWIN()
+
+    // zombie radar
+    if (!this._player._hasZombieRadar && (Game._monetization || this._level._index > 2)) {
+      let item = new Crate("🧭", randPlace())
+      if (Game._monetization)
+        item._position = this._player._position._copy()._add(V2._rand()._scale(60))
+      item._z = 50
+      this._interactiveLayer._addChild(item);
+    }
+
+    // glasses pickup
+    if ((Game._monetization && this._level._index >= 0 || !Game._monetization && this._level._index > 2)) {
+      let item = new Crate("🥽", randPlace())
+      if (Game._monetization)
+        item._position = this._player._position._copy()._add(V2._rand()._scale(60))
+      item._z = 50
+      this._interactiveLayer._addChild(item);
+    }
 
   }
 
@@ -293,6 +302,11 @@ class GameScene extends Scene {
     if (this._player == null) return;
 
 
+    // time goes by
+    if (!this._died && !this._level._isEndGame)
+      Game._cronoAcc += dt
+
+
     // Death status
     if (this._player._hp == 0) {
 
@@ -318,8 +332,8 @@ class GameScene extends Scene {
       Game._event(GameEvent.playerLowHealth, this._player, null)
 
     // Level down
-    if (!this._level._isFirst && this._player._currentTile == this._startTile && this._isHuman(this._player) && !this._down) {
-      this._saveLevelState()
+    if (!this._level._isFirst && !this._level._isEndGame && this._player._currentTile == this._startTile && this._isHuman(this._player) && !this._down) {
+      // this._saveLevelState()
       this._down = true
     }
 
@@ -333,6 +347,18 @@ class GameScene extends Scene {
         if (V2._distance(zombiePlace, this._player._position) > _zombieSpawnerSafeDistance) {
 
           let z = new Zombie(zombiePlace);
+
+          if (this._level._index >= 8 && rand() > .7) { //
+            z._Grow = 2
+            z._maxSpeed = 1.8
+          } else
+            if ((this._level._index == 7 && rand() > .9) || (this._level._index > 7 && rand() > .7)) {
+              z._Grow = 1
+              z._hp = z._maxHp = BigZombieMaxHp
+              z._maxSpeed = .4
+              z._strength = 2
+            }
+
           z._z = 20
           this._zombies.push(z)
           this._interactiveLayer._addChild(z);
@@ -346,6 +372,15 @@ class GameScene extends Scene {
           this._HUD._hideMessage()
           this._zombieWave += 1
         }, 3000);
+
+
+        // grow pickup
+        if (Game._monetization && this._level._index > 4) {
+          let item = new Crate("🍄", randPlace())
+          item._z = 50
+          this._interactiveLayer._addChild(item);
+        }
+
       } else
         this._zombieWave += 1
 
@@ -357,10 +392,10 @@ class GameScene extends Scene {
     if (this._level._isEndGame && this._zombieWave >= this._level._maxZombies.length - 1 && this._zombies.length == 0) {
       this._HUD._showFinal = true
 
-      if (this._startTile) {
-        if (this._dummyTile._position.x < this._startTile._position.x - 15) this._dummyTile._position.x += .1
-        if (this._dummyTile._position.y < this._startTile._position.y - 20) this._dummyTile._position.y += .1
-      }
+      // if (this._startTile) {
+      //   if (this._dummyTile._position.x < this._startTile._position.x - 15) this._dummyTile._position.x += .1
+      //   if (this._dummyTile._position.y < this._startTile._position.y - 20) this._dummyTile._position.y += .1
+      // }
 
       setTimeout(() => {
         this._showStatView = true
@@ -369,17 +404,17 @@ class GameScene extends Scene {
       if (this._showStatView)
         this._showStats()
 
-
+      this._finalZombieHeads.forEach(z => z._update(dt))
     }
 
 
     // tile way out
     if (this._level._isUnLock) {
 
-      // TODO Use the key and the lock ADD ANIMATION
+      // Use the key and the lock
       this._player._hasKey = false
 
-      // TODO Show the rope
+      // Show the rope
       if (!this._theRope && this._exitTile) {
 
         // Dummy tile
@@ -398,7 +433,7 @@ class GameScene extends Scene {
 
 
         this._theRope = new Rope(this._exitTile._position._copy(), new V2(3, 200))
-        // TODO falling rope 
+        // falling rope 
         this._theRope._z = 200;
         Game._scene._addParticle(this._theRope);
 
@@ -415,34 +450,16 @@ class GameScene extends Scene {
       // Climb the rope 
       if (this._isHuman(this._player) && this._player._currentTile && (this._player._currentTile === this._exitTile && this._ropeTimer.elapsed() && !this._player._canClimb) || this._player._canClimb) {
         this._player._canClimb = true
-        sounds.ROPEUP()
         this._exitTile._height += 1.5
       }
 
       // Climb the rope to the next level
       if (this._player._currentTile && this._player._currentTile._height > 120) {
-        Game._scoreRescue(this._humans.length)
-        this._saveLevelState();
+        // this._saveLevelState();
         this._done = true
       }
 
     }
-
-
-
-
-    // PowerUp :: Grow Up
-    // if (this._player._sizeBody.y < 30) {
-    //   this._player._sizeBody = this._player._sizeBody._scale(1.01)
-    //   this._player._sizeHead = this._player._sizeHead._scale(1.01)
-    //   this._player._setParts()
-    // }
-    // PowerUp :: Grow Down
-    // if (this._player._sizeBody.y > 5) {
-    //   this._player._sizeBody = this._player._sizeBody._scale(0.99)
-    //   this._player._sizeHead = this._player._sizeHead._scale(0.99)
-    //   this._player._setParts()
-    // }
 
 
 
@@ -507,6 +524,7 @@ class GameScene extends Scene {
 
   private _saveLevelState() {
 
+    this._level._currentHumanRescued = this._humans.length
     // TODO get the zombie wave state
     this._level._maxZombies = [this._zombies.length]
     this._level._maxHumans = this._humans.length
@@ -525,7 +543,7 @@ class GameScene extends Scene {
     } else if (this._isZombie(from) && this._isHuman(to) && to != this._player) {
       Game._event(GameEvent.zombieHitHuman, from, to)
     } else if (this._isZombie(from) && to === this._player) {
-      if (!this._player._inSafe)
+      if (!this._player._inSafe && !(this._player._Grow == 1))
         Game._event(GameEvent.zombieHitPlayer, from, to, .4) // larger event block time
     }
   }
@@ -538,36 +556,33 @@ class GameScene extends Scene {
 
     let player = <Human>Game._scene._player
 
-    switch (code) {
+    if (obj == null || obj._active)
+      switch (code) {
 
-      case GameEvent.pickupHeart:
-        if (player._hp < player._maxHp) {
-          sounds.HEART()
-          player._hp = player._maxHp
-          this._addLabel(player._position, obj._icon);
-          obj._destroy()
-        }
-        break;
+        case GameEvent.pickupHeart:
+          if (player._hp < player._maxHp) {
+            sounds.HEART()
+            player._hp = player._maxHp
+            this._addLabel(player._position, obj._icon);
+            obj._destroy()
+          }
+          break;
 
-      case GameEvent.playerLowHealth:
-        sounds.DAMAGE()
-        break;
+        case GameEvent.playerLowHealth:
+          sounds.DAMAGE()
+          break;
 
-      case GameEvent.zombieHitPlayer:
-        Game._scene._cam._shake(20)
-        sounds.DAMAGE()
-        obj._hp = M.max(0, obj._hp - 10);
-        if (obj._hp <= 0)
-          Game._scene._cam._shake(100)
-        this._gameEventManager(GameEvent.playerDie, from, obj)
-        break;
+        case GameEvent.zombieHitPlayer:
+          Game._scene._cam._shake(20)
+          obj._hp = M.max(0, obj._hp - 10);
+          if (obj._hp <= 0) 
+            Game._scene._cam._shake(100)
+          sounds.DAMAGE()
+          break;
 
-      case GameEvent.playerDie:
-        sounds.DIE()
-        break;
 
-      case GameEvent.zombieHitHuman:
-        if (obj._active) {
+        case GameEvent.zombieHitHuman:
+
           obj._hp = M.max(0, obj._hp - 25);
 
           if (obj._hp == 0) {
@@ -579,78 +594,59 @@ class GameScene extends Scene {
             z._hasSword = false
             this._zombies.push(z)
             this._interactiveLayer._addChild(z);
-            obj._hp = 0
           }
 
-        }
-        break;
+          break;
 
-      case GameEvent.attack:
-        player._sword._used(player)
-        break;
-
-      case GameEvent.playerHitHuman:
-      case GameEvent.playerHitZombie:
-        obj._hp = M.max(0, obj._hp - player._sword._damage/obj._strength);
-        if (obj._active && obj._hp <= 0) {
-          sounds.HEADOFF()
-          obj._diedBySword = true
-          if (obj._type == CharacterType.zombie)
-            Game._scoreZombie(1)
-          if (obj._type == CharacterType.human)
-            Game._scoreHuman(1)
-
-        } else {
-          sounds.HIT()
-        }
-        break;
+        case GameEvent.attack:
+          player._sword._used(player)
+          break;
 
 
-      case GameEvent.pickupDiamond:
+        case GameEvent.playerHitHuman:
+        case GameEvent.playerHitZombie:
+          obj._hp = M.max(0, obj._hp - player._sword._damage / obj._strength);
+          if (obj._hp <= 0) {
+            sounds.HEADOFF()
+            obj._diedBySword = true
+            if (obj._type == CharacterType.zombie)
+              Game._scoreZombie(1)
+            else
+              Game._scoreHuman(1)
+          } else 
+              sounds.HIT()
+          break;
 
-        if (obj._active) {
+
+        case GameEvent.pickupDiamond:
+
           if (from == Game._player) {
             Game._scoreDiamond(1)
-          } else {
+            sounds.DIAMOND()
+          } else 
             from._countDiamond++;
-          }
-
-          sounds.DIAMOMD()
+          
           obj._destroy()
-        }
-        break;
+          break;
 
-      case GameEvent.sword:
-        sounds.SWORD()
-        break;
+        case GameEvent.sword:
+          sounds.SWORD()
+          break;
 
-      case GameEvent.key:
-        sounds.KEY()
-        this._addLabel(obj._position, obj._icon);
-        break;
+        case GameEvent.key:
+          sounds.KEY()
+          this._addLabel(obj._position, obj._icon);
+          break;
 
-      case GameEvent.unlock:
-        sounds.UNLOCK()
-        obj._icon = "🔓"
-        this._addLabel(obj._position, obj._icon);
-        break;
+        case GameEvent.unlock:
+          sounds.UNLOCK()
+          obj._icon = "🔓"
+          this._addLabel(obj._position, obj._icon);
+          break;
 
-      case GameEvent.attack:
-        sounds.ATTACK()
-        break;
-
-      case GameEvent.hitHuman:
-        sounds.HIT()
-        obj._hp = M.max(0, obj._hp - 25);
-        break;
-
-      case GameEvent.hitZombie:
-        sounds.HIT()
-        break;
-
-      default:
-        break;
-    }
+        default:
+          break;
+      }
 
 
 
@@ -678,7 +674,7 @@ class GameScene extends Scene {
 
 
     // buy new zombie radar
-    if (this._player) {
+    if (this._player._hasZombieRadar) {
 
 
       let playerPosition = this._player._position._copy()._add(new V2(0, -this._player._verticalOffset + this._player._z))
@@ -687,7 +683,7 @@ class GameScene extends Scene {
         let zombiePosition = new V2(z._position.x, z._position.y - z._verticalOffset)
         let arrow = V2._subtract(zombiePosition, playerPosition)
         _ctx.bp();
-        _ctx.ss("rgba(10,255,10,.2)")
+        _ctx.ss(glassesColor) //"rgba(10,255,10,.2)"
         _ctx.ellipse(playerPosition.x, playerPosition.y, 30, 15, 0, arrow._heading() - .2, arrow._heading() + .2);
         _ctx.stroke()
       });
@@ -699,7 +695,7 @@ class GameScene extends Scene {
           let arrow = V2._subtract(nextPosition, playerPosition)
           _ctx.bp();
           _ctx.lw(2)
-          _ctx.ss("rgba(255,255,255,.2)")
+          _ctx.ss("rgba(255,255,255,.2)") // 
           //_ctx.ellipse(playerPosition.x, playerPosition.y, 35, 20, 0, arrow._heading() - .2, arrow._heading() + .2);
           _ctx.s()
           _ctx.tr(playerPosition.x, playerPosition.y)
@@ -729,15 +725,18 @@ class GameScene extends Scene {
 
     this._cam._end(_ctx);
 
+    let player = <Human>Game._scene._player
 
-    if (this._caveEffect && !this._level._isEndGame) {
+    if (player && this._caveEffect && !this._level._isEndGame) {
       // https://stackoverflow.com/questions/43422184/efficient-html5-canvas-glow-effect-without-shape
 
-      let k = M.abs(M.cos(time / 10 + rand() * 10))
-      if (this._factor > 3)
+
+      let k = 6 + M.abs(M.cos(time / 20 + rand() * 10))
+
+      if (player._hasGlasses && this._factor > 4)
         this._factor *= 0.98
-      else
-        k = 1
+      if (!player._hasGlasses && this._factor < 24)
+        this._factor *= 1.02
 
 
       //https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/createRadialGradient
@@ -769,16 +768,21 @@ class GameScene extends Scene {
 
   _showStats() {
 
-    this._level._saveState()
-    this._level._calculateStats()
+    if (!this._level._calculated) {
+      this._level._saveState()
+      this._level._calculateStats()
+    }
 
-    if (this._finalRescued.length < this._level._totalHumanRescued) {
+    if (this._finalRescued.length < M.min(100, this._level._playerHumanRescued)) {
       this._showRescued(this._finalRescued, new V2(0, -50), HumanColors)
-    } else if (this._finalDiamonds.length < this._level._totalDiamonds) {
+
+    } else if (this._finalDiamonds.length < M.min(100, this._level._playerDiamonds)) {
       this._showDiamonds(new V2(0, +120))
-    } else if (this._finalZombieHeads.length < this._level._totalZombieKilled) {
+
+    } else if (this._finalZombieHeads.length < M.min(100, this._level._playerZombieKills)) {
       this._showHeads(this._finalZombieHeads, new V2(-150, +120), ZombieColors)
-    } else if (this._finalHumanHeads.length < this._level._totalHumanKilled) {
+
+    } else if (this._finalHumanHeads.length < M.min(100, this._level._playerHumanKills)) {
       this._showHeads(this._finalHumanHeads, new V2(+150, +120), HumanColors)
     }
   }
@@ -786,7 +790,7 @@ class GameScene extends Scene {
 
   private _showRescued(list: Human[], delta: V2, colors?) {
 
-    var rescued = new Human(this._player._position._copy()._add(delta));
+    var rescued = new Human(this._exitTile._position._copy()._add(delta));
     rescued._lifeSpan = -1;
     rescued._setYOff();
     rescued._v._add(V2._fromAngle(rand() * PI * 2)._scale(40 * rand()));
@@ -803,7 +807,7 @@ class GameScene extends Scene {
   private _showDiamonds(delta: V2, colors?) {
 
 
-    var diamond = new Crate("💎", this._player._position._copy()._add(delta));
+    var diamond = new Crate("💎", this._exitTile._position._copy()._add(delta));
     diamond._used = true
     diamond._lifeSpan = -1;
     diamond._setYOff();
@@ -823,15 +827,24 @@ class GameScene extends Scene {
 
 
     var newHead = new HumanHead(
-      this._player._position._copy()._add(delta),
+      this._exitTile._position._copy()._add(delta),
       new V2(16, 18),
       this
     );
-    newHead._isDead = true;
-    newHead._skinColor = colors._skinColor[Math.random() * colors._skinColor.length >> 0];
+    newHead._eyeColor = colors._eyeColor
+    newHead._pupileColor = colors._pupileColor
     newHead._bloodColor = colors._bloodColor;
+    newHead._skinColor = colors._skinColor[rand() * colors._skinColor.length >> 0];
+    newHead._hairColor = getRandomColor();
+    if (colors._bloodColor == ZombieColors._bloodColor) {
+      newHead._mouthType = CharacterType.zombie
+      newHead._type = CharacterType.zombie
+      newHead._skinColor = ZombieColors._skinColor[rand() * ZombieColors._skinColor.length >> 0]
+    }
+    newHead._isDead = true;
     newHead._bleed();
     newHead._lifeSpan = -1;
+
 
     newHead._boostTime = time + .03
     newHead._setYOff();

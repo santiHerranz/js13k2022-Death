@@ -5,8 +5,6 @@ export const GameEvent = {
     key: 3,
     unlock: 4,
     attack: 5,
-    hitHuman: 6,
-    hitZombie: 7,
     playerHitZombie: 8,
     playerHitHuman: 9,
     zombieHitPlayer: 10,
@@ -14,8 +12,8 @@ export const GameEvent = {
     playerLowHealth: 12,
     sceneLowFood: 13,
     pickupHeart: 14,
-    playerDie: 15,
-    pickupDiamond: 16
+    pickupDiamond: 16,
+    pickupAllDiamonds: 17,
 }
 
 export const CharacterType = {

@@ -6,7 +6,7 @@ import { idle, walk, attack } from "./AnimationConfigs";
 import HumanHead from "./HumanHead";
 import { CollisionRect } from "../core/Collision";
 import { time, Timer } from "../timer";
-import { c2i, i2c, M, PI, rand, rndPN, rndRng } from "../core/utils";
+import { M, PI, rand, rndPN, rndRng } from "../core/utils";
 import BodyPart from "./BodyPart";
 import HumanSword from "./HumanSword";
 import HumanBody from "./HumanBody";
@@ -15,14 +15,13 @@ import Sword from "./Sword";
 import { GameEvent, CharacterType as CharacterType } from "../core/GameEvent";
 import GameScene, { _zombieSpawnerSafeDistance } from "../scenes/GameScene";
 import { Control } from "./Control";
-import { debug, getRandomColor, HumanColors } from "../configuration";
+import { BigZombieMaxHp, debug, getRandomColor, HumanColors, ZombieColors } from "../configuration";
 import { TileType } from "../components/createTiles";
-import Zombie from "./Zombie";
 
 
 export default class Human extends GameObject {
 
-  public _outfitColor: string = HumanColors._outfitColor[Math.random() * HumanColors._outfitColor.length>>0];
+  public _outfitColor: string = HumanColors._outfitColor[rand() * HumanColors._outfitColor.length>>0];
   public _skinColor: string
   public _hairColor: string
   public _bloodColor: string = HumanColors._bloodColor;
@@ -46,9 +45,9 @@ export default class Human extends GameObject {
   public _inAttack: boolean = false;
   public _inSafe: boolean = false;
 
-  public _ATTACK_DELAY: number = 15;
+  // public _ATTACK_DELAY: number = 15;
 
-  public _attackDelayCounter: number = 0;
+  // public _attackDelayCounter: number = 0;
 
   public _idleAnim: Animation;
   public _walkAnim: Animation;
@@ -65,6 +64,8 @@ export default class Human extends GameObject {
   public _hasKey: boolean = false
   public _countDiamond: number = 0
   public _hasSword: boolean = false
+  public _hasGlasses: boolean = false;
+  public _hasZombieRadar: boolean = false;
 
   public _canClimb: boolean;
 
@@ -73,8 +74,12 @@ export default class Human extends GameObject {
   public _motionHeading: number;
 
   public _stunTimer: Timer = new Timer;
+  public _growEffectTimer: Timer = new Timer;
+  public _glassesTimer: Timer = new Timer;
 
   public _hpIndicatorColor = "#00ff00";
+  public _Grow: number = 0;
+  
 
 
   get _verticalOffset() {
@@ -84,7 +89,7 @@ export default class Human extends GameObject {
   constructor(p = new V2()) {
     super(p);
 
-    this._motionHeading = Math.PI;
+    this._motionHeading = PI;
     this._controlFunc = Control.goToPosition;
 
     this._type = CharacterType.human
@@ -93,6 +98,7 @@ export default class Human extends GameObject {
 
     // max speed
     this._maxSpeed = 10
+    this._maxForce = 1
     this._maxZSpeed = 2
 
     this._idleAnim = new Animation(20, idle);
@@ -103,11 +109,12 @@ export default class Human extends GameObject {
     this._currentAnim = this._idleAnim;
 
     this._setColors();
+    
   }
 
   _setColors() {
-    this._skinColor = HumanColors._skinColor[Math.random() * HumanColors._skinColor.length >> 0];
-    this._hairColor = getRandomColor(); // HumanColors._hairColor[Math.random() * HumanColors._hairColor.length>>0];
+    this._skinColor = HumanColors._skinColor[rand() * HumanColors._skinColor.length >> 0];
+    this._hairColor = getRandomColor(); 
     this._setParts();
   }
 
@@ -143,18 +150,19 @@ export default class Human extends GameObject {
 
   _update(dt) {
 
-    this._attackDelayCounter = M.max(this._attackDelayCounter - dt, 0);
+    // this._attackDelayCounter = M.max(this._attackDelayCounter - dt, 0);
 
-    if (this._currentTile && this._currentTile._tileType == TileType._LAVA) {
-      this._bump(this, 5, true)
-    }
+    // if (this._currentTile && this._currentTile._tileType == TileType._HOLE) {
+    //   this._bump(this, 5, true)
+    // }
 
 
     // Facing move direction
-    if (this._v.x > 0 && !this._facingRight) // this._v._magnitude() > 0.1 
+    if (this._v.x > .2 && !this._facingRight ) {
       this._facingRight = true
-    if (this._v.x < 0 && this._facingRight)
+    } else if (this._v.x < -.2 && this._facingRight) {
       this._facingRight = false
+    }
 
     // navigation control
     if (this._target != null && !this._stunTimer.active()) {
@@ -183,14 +191,58 @@ export default class Human extends GameObject {
     }
 
 
+
     // slow walk when carry sword
     if (this._hasSword)
       this._v._scale(.5);
 
 
+    // // PowerUp :: Grow Up
+    if (this._Grow == 1) {
+      if (this._sizeBody.y < 30) {
+        this._growChange(1.01);
+      }
+    }
+    // PowerUp :: Grow Down
+    if (this._Grow == 2) {
+      if (this._sizeBody.y > 10) {
+        this._growChange(0.99);
+      }
+    }
+
+    if (this._Grow == 0) {
+      if (this._sizeBody.y - Game._playerRef._sizeBody.y > 1) {
+        this._growChange(0.99);
+      } else if (Game._playerRef._sizeBody.y - this._sizeBody.y > 1) {
+        this._growChange(1.01);
+      }
+    }
+
+
+
+    if (this._growEffectTimer.elapsed()) {
+      this._Grow = 0
+      this._growEffectTimer.unset()
+    }
+
+    // glasses
+    this._head._hasGlasses = (this == Game._player && this._hasGlasses)
+
+    if (this._glassesTimer.elapsed()) {
+      this._hasGlasses = false
+      this._glassesTimer.unset()
+    }
     super._update(dt);
   }
 
+
+  private _growChange(value: number = 1.0) {
+    this._sizeBody._scale(value);
+    this._sizeHead._scale(value);
+    this._setParts();
+    this._body._sizeArm._scale(value);
+    this._body._sizeLeg._scale(value);
+  }
 
   _destroy() {
     if (!this._active) return
@@ -222,7 +274,7 @@ export default class Human extends GameObject {
 
 
 
-  private _throwAway(item: Crate, zv: number = rndRng(0.5, 1.5), speed: number = 4) {
+  private _throwAway(item: Crate, zv: number = rndRng(0.5, 1), speed: number = 4) {
     this._gibPart(item as any, 40, zv, speed);
     Game._scene._addParticle(item);
   }
@@ -239,9 +291,7 @@ export default class Human extends GameObject {
     newHead._skinColor = this._head._skinColor;
     newHead._bloodColor = this._head._bloodColor;
     newHead._lifeSpan = 3000;
-    
-    newHead._drawMouth = (ctx) => {this._drawMouth(ctx)}
-
+    newHead._mouthType = this._type
 
     var newBody = new HumanBody(
       this._position._copy(),
@@ -263,27 +313,39 @@ export default class Human extends GameObject {
 
   }
   
-  
-  public _drawMouth(ctx: CanvasRenderingContext2D) {
-    this._head._drawMouth(ctx)
-  }
-
 
   _setParts() {
 
+
     // Important! first body then head
+    if (this._body == null)
     this._body = new HumanBody(
       new V2(0, 9), // V2(0, 9) correct!
       this._sizeBody,
       this
     );
 
+    if (this._head == null)
     this._head = new HumanHead(
       new V2(0, this._body._position.y - this._sizeBody.y), // +this._sizeBody.y - this._sizeHead.y
       this._sizeHead,
       this
     );
 
+    this._head._skinColor = this._skinColor
+    this._head._hairColor = this._hairColor
+    this._body._skinColor = this._skinColor
+
+
+    this._head._position.y = this._body._position.y - this._sizeBody.y
+
+    this._head._mouthType = this._type
+    
+    if (this._type == CharacterType.zombie) {
+      this._head._skinColor = this._skinColor
+      this._head._eyeColor = ZombieColors._eyeColor
+      this._head._pupileColor = ZombieColors._pupileColor
+    }
 
     this._sword = new HumanSword(
       new V2(1, this._body._position.y), // this._sizeBody.y/2
@@ -340,6 +402,12 @@ export default class Human extends GameObject {
 
       this._bump(from, 1, false)
 
+      if (from == Game._scene._player && from._Grow == 1) {
+          this._boostTime = time + .1
+          this._bump(from, 2, true)
+          
+        }
+
       // get a push from a human
       if (from == Game._scene._player
         && this._hasSword
@@ -360,9 +428,6 @@ export default class Human extends GameObject {
 
     if (!this._active) return;
 
-    // must be at the floor level
-    //if (M.floor(this._z) != 0) return;
-
     let collisionAreaList = []
 
     collisionAreaList.push({
@@ -382,7 +447,7 @@ export default class Human extends GameObject {
             0 + (this._facingRight ? 0 : -1) * (this._sword._length + 20),
             -20 - 15 - this._verticalOffset + this._z
           ),
-          this._sword._length + 20, 40,
+          this._sword._length + 20, 45,
           50, true
         )
       })
@@ -436,23 +501,12 @@ export default class Human extends GameObject {
       enemiesToDamage.forEach((enemy) => {
 
         if (enemy._z === 0) {
-
           enemy._object._hitBy(this, false);
-
-          if (enemy._object instanceof Human)
-            Game._event(GameEvent.hitHuman, this, enemy._object)
-          else
-            Game._event(GameEvent.hitZombie, this, enemy._object)
-
-
         }
-
       });
-
-
     }
 
-    this._attackDelayCounter = this._ATTACK_DELAY;
+    // this._attackDelayCounter = this._ATTACK_DELAY;
 
   }
 
@@ -527,6 +581,7 @@ export default class Human extends GameObject {
       // head
       this._head._draw(ctx, anim.h);
 
+
       // sword
       if (this._hasSword)
         this._sword._draw(ctx, anim.s);
@@ -553,7 +608,7 @@ export default class Human extends GameObject {
 
 
 
-      if (Game._scene instanceof GameScene && this._hp < 90) {
+      if (Game._scene instanceof GameScene && ( this._maxHp == 100 && this._hp < 90) || (this._maxHp == BigZombieMaxHp && this._hp < 250)) {
 
         if (!this._facingRight) {
           ctx.scale(-1, 1);
@@ -561,7 +616,7 @@ export default class Human extends GameObject {
 
         ctx.lineWidth = 20 * 0.1;
         let width = 20;
-        let offsetY = 20 * 1.5;
+        let offsetY = this._sizeBody.y + this._sizeHead.y;
 
         ctx.bp();
         ctx.ss("#fff");
@@ -570,7 +625,7 @@ export default class Human extends GameObject {
         ctx.stroke();
 
         ctx.bp();
-        ctx.strokeStyle = this._hpIndicatorColor;
+        ctx.strokeStyle = this._bloodColor;
         ctx.mt(0 - width / 2, 0 - offsetY);
         ctx.lt(0 - width / 2 + width * (this._hp / this._maxHp), 0 - offsetY); // M.abs(M.cos(time/1))*100 
         ctx.stroke();

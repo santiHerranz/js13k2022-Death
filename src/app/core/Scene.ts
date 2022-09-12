@@ -36,29 +36,26 @@ export default class Scene extends GameObject {
   _update(dt) {
     this._cam._update(dt);
 
-    let k = 1
+    let k = 2
     let kz = 10
 
 
-    // COMMENT BEFORE RELEASE
-    if (Input._PageUp && !this._cheat) {
-      setTimeout(() => {
-        this._done = true
-        this._cheat = false
-      }, 100);
-      this._cheat = true
-    }
-    if (Input._PageDown && !this._cheat) {
-      setTimeout(() => {
-        this._down = true
-        this._cheat = false
-      }, 100);
-      this._cheat = true
-    }
+    // TODO BEFORE RELEASE
+    // if (Input._PageUp && !this._cheat) {
+    //   setTimeout(() => {
+    //     this._done = true
+    //     this._cheat = false
+    //   }, 100);
+    //   this._cheat = true
+    // }
+    // if (Input._PageDown && !this._cheat) {
+    //   setTimeout(() => {
+    //     this._down = true
+    //     this._cheat = false
+    //   }, 100);
+    //   this._cheat = true
+    // }
 
-
-    if (Input._KeyM) 
-      Game._musicEnabled != Game._musicEnabled
 
     // up/down
     if (Input._KeyUp) {

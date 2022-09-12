@@ -4,10 +4,9 @@ class InputKeyboard {
   public _KeyDown: boolean;
   public _KeyRight: boolean;
   public _Space: boolean;
-  public _PageUp: boolean;
-  public _PageDown: boolean;
   public _Enter: boolean;
-  public _KeyM: boolean;
+  // public _PageUp: boolean;
+  // public _PageDown: boolean;
 
   constructor() {
     var handler = (v: boolean) => (e: KeyboardEvent) => {
@@ -24,9 +23,8 @@ class InputKeyboard {
         case "Space": this._Space = v; break;
        case "NumpadEnter":
         case "Enter": this._Enter = v; break;
-        case "PageUp": this._PageUp = v; break;
-        case "PageDown": this._PageDown = v; break;
-        case "KeyM": this._KeyM = v; break;
+        // case "PageUp": this._PageUp = v; break;
+        // case "PageDown": this._PageDown = v; break;
 
       }
     }

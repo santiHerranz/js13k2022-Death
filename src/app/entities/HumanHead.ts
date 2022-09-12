@@ -1,9 +1,11 @@
 import BodyPart from "./BodyPart";
 import Emitter from "../core/Emitter";
 import V2 from "../core/V2";
-import { time, Timer } from "../timer";
+import {  Timer } from "../timer";
 import { M, PI, rand } from "../core/utils";
-import { HumanColors } from "../configuration";
+import { glassesColor, HumanColors } from "../configuration";
+import { CharacterType } from "../core/GameEvent";
+
 
 class HumanHead extends BodyPart {
 
@@ -16,8 +18,11 @@ class HumanHead extends BodyPart {
   public _eyeColor: string = HumanColors._eyeColor
   public _pupileColor: string = HumanColors._pupileColor
 
+  public _mouthType: number = CharacterType.human
+
   public _mouthTimer: Timer = new Timer(.1);
   public _breathScale: number = 1;
+  public _hasGlasses: boolean = false;
 
 
   constructor(p, size, colors?) {
@@ -38,14 +43,14 @@ class HumanHead extends BodyPart {
 
   _update(dt: any): void {
 
-    // attenuation of acceleration
-    this._a._scale(.9);
+    // // attenuation of acceleration
+    // this._a._scale(.9);
 
-    // attenuation of velovity
-    this._v._scale(.9);
+    // // attenuation of velovity
+    // this._v._scale(.9);
 
-    // attenuation of rotarion
-    this._rv *= .9;
+    // // attenuation of rotarion
+    // this._rv *= .9;
 
 
     // randomly blink
@@ -56,7 +61,7 @@ class HumanHead extends BodyPart {
       this._breathTimer.set(rand(1.5, 3));
 
     if (this._mouthTimer.elapsed())
-      this._mouthTimer.set(rand(.2,.8));
+      this._mouthTimer.set(rand(.2, .8));
 
     super._update(dt)
   }
@@ -66,7 +71,7 @@ class HumanHead extends BodyPart {
     var bleeder = new Emitter();
     Object.assign(bleeder, {
       _position: new V2(0, this._size.y / 2),
-      _rotation: -Math.PI / 4,
+      _rotation: -PI / 4,
       _addToScene: true,
       _zgrav: .098,
       _color: this._bloodColor,
@@ -80,7 +85,7 @@ class HumanHead extends BodyPart {
       _particleLifetimeVariance: 100,
       _speed: 0,
       _speedVariance: 5,
-      _rVariance: Math.PI * 2,
+      _rVariance: PI * 2,
       _duration: 300,
       _zStart: this._size.y,
     });
@@ -102,8 +107,6 @@ class HumanHead extends BodyPart {
 
     this._shouldRenderShadow && this._renderShadow(ctx);
     ctx.rot(offsets.r + this._rotation);
-
-
 
     ctx.ss("#000");
 
@@ -130,7 +133,10 @@ class HumanHead extends BodyPart {
     // let _openMouth = 1.2
     // if (this._isDead) _openMouth = .2
 
-    this._drawMouth(ctx);
+    if (this._mouthType == CharacterType.zombie)
+      this._drawMouthZombie(ctx);
+    else
+      this._drawMouthHuman(ctx);
 
 
 
@@ -164,12 +170,36 @@ class HumanHead extends BodyPart {
 
     this._drawEyes(ctx, blinkScale);
 
+
+    if (this._hasGlasses)
+      this._drawGlasses(ctx)
+
+    ctx.r();
+
+  }
+
+  public _drawGlasses(ctx: CanvasRenderingContext2D) {
+    
+    ctx.s();
+    ctx.tr(this._size.x * 3 / 9, -this._size.y)
+
+    ctx.fs(glassesColor);
+    ctx.bp();
+    ctx.rect(-this._size.x/3, +this._size.y/3, this._size.x/2, this._size.y/3)
+    ctx.fill();    
+
+    ctx.bp();
+    ctx.ss("#000");
+    ctx.lw(1);
+    ctx.rect(-this._size.x/3, +this._size.y/3, this._size.x/2, this._size.y/3)
+    ctx.stroke();    
+
     ctx.r();
 
   }
 
 
-  public _drawMouth(ctx: CanvasRenderingContext2D) {
+  public _drawMouthHuman(ctx: CanvasRenderingContext2D) {
     ctx.fs("#000");
     ctx.bp();
     ctx.lw(.1);
@@ -188,10 +218,45 @@ class HumanHead extends BodyPart {
   }
 
 
+  public _drawMouthZombie(ctx: CanvasRenderingContext2D) {
+
+    let mouthScale = .3 + .3 * M.cos(this._mouthTimer.p100() * PI * 2);
+    let xx2 = this._size.x /6
+    let yy2 = this._size.y /8
+
+    ctx.s();
+    ctx.tr(this._size.x * 3 / 9, -this._size.y / 8)
+
+    ctx.fs("#624");
+    ctx.bp();
+    ctx.rect(-xx2, -yy2/2, xx2*2, yy2/2 + yy2 * mouthScale)
+    ctx.fill();
+
+
+    ctx.ss("#ff7");
+    ctx.lw(1.5);
+    ctx.setLineDash([3, .5]);
+    ctx.bp();
+    ctx.mt(-yy2, -1)
+    ctx.lt(yy2, -1)
+    ctx.stroke()
+    ctx.bp();
+    ctx.lw(1);
+    ctx.setLineDash([2, .5]);
+    ctx.mt(-yy2, 2 * mouthScale)
+    ctx.lt(yy2, 2 * mouthScale)
+    ctx.stroke()
+
+
+    
+    ctx.r();
+  }
+
 
 
 
   private _drawEyes(ctx: CanvasRenderingContext2D, blinkScale: number) {
+
     ctx.ss("#000");
     // ctx.lw(0);
     const eyeSize = this._size.y / 20;
@@ -204,7 +269,7 @@ class HumanHead extends BodyPart {
 
     ctx.bp();
     ctx.fs(this._pupileColor);
-    ctx.ellipse(.5+this._size.x / 2.25, -this._size.y + this._size.y / 2, eyeSize/2 * .8, eyeSize/2 * 2.7 * blinkScale, 0, 0, PI * 2);
+    ctx.ellipse(.5 + this._size.x / 2.25, -this._size.y + this._size.y / 2, eyeSize / 2 * .8, eyeSize / 2 * 2.7 * blinkScale, 0, 0, PI * 2);
     ctx.cp();
     ctx.fill();
 
@@ -217,10 +282,10 @@ class HumanHead extends BodyPart {
 
     ctx.bp();
     ctx.fs(this._pupileColor);
-    ctx.ellipse(.5+this._size.x / 4, -this._size.y + this._size.y / 2, eyeSize/2 * 1.1, eyeSize/2 * 3 * blinkScale, 0, 0, PI * 2);
+    ctx.ellipse(.5 + this._size.x / 4, -this._size.y + this._size.y / 2, eyeSize / 2 * 1.1, eyeSize / 2 * 3 * blinkScale, 0, 0, PI * 2);
     ctx.cp();
     ctx.fill();
-    
+
   }
 
 }

@@ -13,7 +13,7 @@ class HumanBody extends BodyPart {
   public _sizeLeg: V2 = new V2(5, 4);
   public _sizeSword: V2 = new V2(10, 40);
 
-  public _color: string;
+  public _skinColor: string;
 
   constructor(p, size, human) {
     super(p, size);
@@ -81,7 +81,6 @@ class HumanBody extends BodyPart {
     // ctx.arc(0,0,1,0,PI*2)
     // ctx.stroke()    
 
-    // arms color
     ctx.fs(this._human._skinColor);
     // arm
     if (this._human._type == CharacterType.zombie) { // 

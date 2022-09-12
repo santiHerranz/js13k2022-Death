@@ -1,7 +1,7 @@
 import { Game } from "../main";
 import V2 from "./V2";
 import GameObject from "./GameObject";
-import { rndPN } from "./utils";
+import { M, rndPN } from "./utils";
 import Particle from "./Particle";
 
 class Emitter extends GameObject {
@@ -91,7 +91,7 @@ class Emitter extends GameObject {
     var rAngle = baseAngle + this._rVariance * rndPN();
     var rSpeed = this._speed + this._speedVariance * rndPN();
 
-    var rDir = new V2(Math.cos(rAngle), Math.sin(rAngle))._scale(rSpeed);
+    var rDir = new V2(M.cos(rAngle), M.sin(rAngle))._scale(rSpeed);
 
     var rSize = this._size + this._sizeVariance * rndPN();
     rSize = rSize < 0 ? 0 : ~~rSize;

@@ -1,13 +1,13 @@
-const STORAGE_KEY = "EFDH";
+const STORAGE_KEY = "efdh_";
 
-const getData = () => localStorage.getItem(STORAGE_KEY)?JSON.parse(localStorage.getItem(STORAGE_KEY)) : {};
-const saveData = (data) => localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-
-const get = (key = "", value) => getData()[key] || value;
+const get = (key = "", value) => {
+  let v = localStorage[STORAGE_KEY+key]
+  if (v == undefined)
+    save(key, value)
+  return v || value
+}
 const save = (key, value) => {
-  const data = getData();
-  data[key] = value;
-  saveData(data);
+  localStorage[STORAGE_KEY+key] = value
 };
 
 export default { save, get }

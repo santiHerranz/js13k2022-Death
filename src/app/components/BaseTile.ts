@@ -9,8 +9,7 @@ import Level from "../Level";
 // Nicked from http://stackoverflow.com/questions/5560248
 export var shadeColor = (color, percent) => {
 
-  // TODO 
-  if (color == Level._transparent || color == Level._lavaColor || color == Level._translucid)
+  if (color == Level._transparent)
     return color
 
   color = color.substr(1);
@@ -70,14 +69,14 @@ class BaseTile extends GameObject {
         M.floor(TILESIZE.y + h)
       );
 
-      if (debug) {
-        ctx.fs("#000")
-        ctx.bp();
-        ctx.ta()
-        ctx.ft((this._isoPosition.x-1) + ":" + (this._isoPosition.y), this._position.x - TILESIZE.x / 2, this._position.y - TILESIZE.y*2/3 ) // TILE index : Health
-        ctx.cp();
-        ctx.fill()
-      }
+      // if (debug) {
+      //   ctx.fs("#000")
+      //   ctx.bp();
+      //   ctx.ta()
+      //   ctx.ft((this._isoPosition.x-1) + ":" + (this._isoPosition.y), this._position.x - TILESIZE.x / 2, this._position.y - TILESIZE.y*2/3 ) // TILE index : Health
+      //   ctx.cp();
+      //   ctx.fill()
+      // }
     
     }
 

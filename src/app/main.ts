@@ -2,20 +2,18 @@
 
 import 'types-wm'
 import "./interface-canvas";
-import { WIDTH, HEIGHT, debug } from "./configuration";
+import { WIDTH, HEIGHT, debug, HumanColors, getRandomColor } from "./configuration";
 import GameScene from "./scenes/GameScene";
 import { createTiles } from "./components/createTiles";
 import { timeStep } from "./timer";
 import Level from "./Level";
 import IntroScene from "./scenes/IntroScene";
-import { audioMode, sounds, UpdateAudio } from "./sound";
+import { UpdateAudio } from "./sound";
 import Human from "./entities/Human";
 import Semaphore from "./core/Semaphore";
-import { M } from "./core/utils";
+import { M, rand } from "./core/utils";
 import V2 from "./core/V2";
 import localStorage from './localStorage';
-
-const btnAudio = document.getElementById("btnAudio");
 
 class _Game {
 
@@ -24,23 +22,19 @@ class _Game {
   public _ctx: CanvasRenderingContext2D;
   public _scene: any;
   public _level: Level = new Level
-  public _paused: boolean = false;
   public _animationFrame: any;
+  public _cronoAcc: number = 0;
+
 
   public _spritesheets: any[] = [];
 
   public _sem = new Semaphore()
 
-  public _eventTimers = []
   public _playerRef: Human;
   public _player: Human;
 
-  public _musicEnabled: boolean = false;
-
-  private musicStarted: boolean = false;
-  _monetization: boolean;
-  _audioMode: number;
-  _Click: boolean;
+  public _monetization: boolean = false;
+  public _Click: boolean;
 
   constructor() {
 
@@ -64,49 +58,43 @@ class _Game {
     this._canvas.addEventListener("mouseup", mouseHandler(false));
 
 
-    // Set audio options
-    btnAudio.addEventListener("click", () => {
-      this._audioMode++
-      this.setAudioMode();
-    })
-    this._audioMode = localStorage.get("audioMode", 0)
-    this.setAudioMode()
 
-
-    this._loadSpritesheets(this).then(uid => {
+    this._loadSpritesheets(this).then(() => {
       this._intro();
     });
 
+    //
+
+
 
     // Player consistency
+
     this._playerRef = new Human(new V2(0, 0))
     this._playerRef._outfitColor = "#f00"
-    this._playerRef._skinColor = "#E0AC69";
-    this._playerRef._hairColor = "#555";
+    this._playerRef._skinColor = localStorage.get("skinColor", HumanColors._skinColor[rand() * HumanColors._skinColor.length >> 0]) 
+    this._playerRef._hairColor = localStorage.get("hairColor", getRandomColor()) 
+    this._playerRef._setParts()
 
-    this._player = new Human(new V2(0, 0))
-    this._player._outfitColor = "#f00"
-    this._player._skinColor = "#E0AC69";
-    this._player._hairColor = "#555";
-    this._player._setParts()
+
+    this.newPlayer();
 
 
 
-    // this._canvas.onmouseup = e => {
-    //   this._scene._mouseClick();
-    // };
+
+    this._canvas.onmouseup = e => {
+      this._scene._mouseClick();
+    };
 
 
     if (document.monetization) {
       document.monetization.addEventListener('monetizationstart', () => {
-        console.log('monetizationstart')
+        //console.log('monetizationstart')
         this._monetization = true
       })
     }
 
-
-    sounds.BACKGROUND()
-
+    // TODO BEFORE RELEASE
+    //this._monetization = true
   }
 
   _loadSpritesheets = (that) => {
@@ -128,33 +116,15 @@ class _Game {
       if (that._spritesheets.length > 0) {
         resolve('OK');
       }
-      else {
-        reject(Error("It broke"));
-      }
+      // else {
+      //   reject(Error("It broke"));
+      // }
     });
   };
 
-  private setAudioMode() {
-    if (this._audioMode < 0 || this._audioMode > 2)
-      this._audioMode = 0;
 
-    let icon: string;
-    if (this._audioMode == 0) { sounds.CLICK(); icon = "🎵"; btnAudio.title = "Sound ON Music ON"; }
-    if (this._audioMode == 1) { sounds.CLICK(); icon = "🙉"; btnAudio.title = "Sound ON Music OFF"; }
-    if (this._audioMode == 2) { icon = "🔇"; btnAudio.title = "Silence"; }
-
-    localStorage.save("audioMode", this._audioMode);
-
-    btnAudio.innerText = icon;
-
-    audioMode.mode = this._audioMode
-  }
 
   _mouseClick() {
-  }
-
-  _scoreRescue(value: number) {
-    this._level._currentHumanRescued += value
   }
 
   _scoreDiamond(value: number) {
@@ -213,11 +183,11 @@ class _Game {
     timeStep(dt)
   }
 
-  _end() {
-    this._disable();
-    this._levelUp();
-    this._enable()
-  }
+  // _end() {
+  //   this._disable();
+  //   this._levelUp();
+  //   this._enable()
+  // }
 
   _levelUp() {
     this._disable();
@@ -241,6 +211,7 @@ class _Game {
     this._scene = new GameScene(this._spritesheets[this._level._index], this._level, this._player);
     this._scene._down = false
     this._scene._died = false
+    this._scene._player._currentTile = null
   }
 
   _update(dt) {
@@ -255,22 +226,14 @@ class _Game {
       this._scene._done = false
 
       if (this._scene instanceof IntroScene) {
-
-        let plays = localStorage.get("plays", 0)
-        localStorage.save("plays", ++plays)
-        
         this._restart()
-
       }
       else if (this._scene instanceof GameScene) {
+
         if ((<GameScene>this._scene)._died) {
           this._disable();
 
-          this._player = new Human()
-          this._player._outfitColor = "#f00"
-          this._player._hairColor = this._playerRef._hairColor
-          this._player._skinColor = this._playerRef._skinColor
-          this._player._setParts()
+          this.newPlayer();
 
           this._restart()
           this._enable()
@@ -289,6 +252,19 @@ class _Game {
     this._draw();
   }
 
+  private newPlayer() {
+
+    this._player = new Human()
+    this._player._outfitColor = this._playerRef._outfitColor
+    this._player._skinColor = this._playerRef._skinColor;
+    this._player._hairColor = this._playerRef._hairColor;
+    this._player._setParts()
+
+    this._player._maxSpeed = 10
+    this._player._maxForce = 1.3
+    this._player._maxZSpeed = 2
+  }
+
   _draw() {
     var { _ctx, _scene } = this;
 
@@ -302,15 +278,6 @@ class _Game {
     _ctx.r();
 
   }
-
-
-
-
-
-
-
-
-
 
 }
 

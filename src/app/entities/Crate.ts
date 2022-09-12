@@ -5,7 +5,6 @@ import { GameEvent, CharacterType } from "../core/GameEvent";
 import { M } from "../core/utils";
 import GameObject from "../core/GameObject";
 import { time } from "../timer";
-import { sounds } from "../sound";
 import Human from "./Human";
 
 class Crate extends GameObject {
@@ -43,13 +42,14 @@ class Crate extends GameObject {
     _hitBy(from) {
         if (!this._active) return
 
+        let player = <Human>Game._scene._player
 
         // things everyone can pickup
         if (this._icon == "🔑" && !from._hasKey) {
             from._hasKey = true
+            if (from === player)
+                Game._event(GameEvent.key, from, this, 1);
             this._destroy()
-            if (from === Game._scene._player)
-                Game._event(GameEvent.key, from, this, .1);
 
         }
 
@@ -71,13 +71,21 @@ class Crate extends GameObject {
             } else if (this._icon == "💗") {
                 Game._event(GameEvent.pickupHeart, from, this, .1, this._id);
 
-            } else if (this._icon == "🔓") {
+            } else if (this._icon == "🍄") {
+                player._Grow = 1
+                player._growEffectTimer.set(15)
+                this._destroy()
+            } else if (this._icon == "🧭") {
+                player._hasZombieRadar = true
+                this._destroy()
+            } else if (this._icon == "🥽") {
+                if (!player._hasGlasses) {
+                    player._hasGlasses = true
+                    player._glassesTimer.set(60)
+                    this._destroy()
+                }
+            } 
 
-            }
-
-            // do not destroy
-            // if (!["🔒", "🔓", "💗"].includes(this._icon))
-            //     this._destroy()
         }
 
     }
@@ -98,13 +106,7 @@ class Crate extends GameObject {
 
         ctx.rot(offsets.r + this._rotation);
 
-        // keep distance area
-        // ctx.ss("rgba(255,0,0,1");
-        // ctx.bp()
-        // ctx.ellipse(0, 12 + this._z, 25, 25/2, 0, 0, PI * 2)
-        // ctx.stroke()        
-
-        ctx.fs("rgba(0,0,0,1");
+        ctx.fs("#000");
         ctx.bp()
         ctx.ta();
         let fontSize: number = this._size.x + (this._used ? 0 : 5 * M.abs(M.cos(time * 2.5)))

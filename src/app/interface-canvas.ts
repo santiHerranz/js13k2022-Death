@@ -58,13 +58,13 @@ cp.st = function (text: string, x: number, y: number, fontSize: number = 20, fon
     this.miterLimit = 2;
     this.font = fontSize + "px " + fontName;
     this.ss(borderColor)
-    this.lineWidth = 4
+    this.lw(4)
     this.strokeText(text, x, y);
     this.fs(fontColor)
     this.ft(text, x, y);
 }
-cp.ta = function () {
-    this.textAlign = "center";
+cp.ta = function (text: string = "center") {
+    this.textAlign = text;
     this.textBaseline = "middle";
 };
 

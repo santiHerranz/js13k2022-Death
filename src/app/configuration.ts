@@ -1,3 +1,4 @@
+import { M, rand } from "./core/utils";
 import V2 from "./core/V2";
 
 export const debug = false
@@ -27,10 +28,15 @@ export function getRandomColor() {
     var letters = '0123456789ABCDEF';
     var color = '#';
     for (var i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
+        color += letters[M.floor(rand() * 16)];
     }
     return color;
 }
+
+export const BigZombieMaxHp = 300
+
+export const glassesColor = "rgba(50,255,50,.5)";
+
 
 export const HumanColors = {
     _outfitColor: ["#00f"],
@@ -42,7 +48,7 @@ export const HumanColors = {
 
 export const ZombieColors = {
     _outfitColor: ["#545943","#531F7C"],
-    _skinColor: ["#308949"],
+    _skinColor: ["#246837"],
     _bloodColor: "#262",
     _eyeColor: "#fcc",
     _pupileColor: "#f00"

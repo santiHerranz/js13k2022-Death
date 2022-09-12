@@ -1,17 +1,17 @@
-import { debug, getRandomColor, HEIGHT, HumanColors, WIDTH, ZombieColors } from "../configuration";
+import { debug, getRandomColor, glassesColor, HEIGHT, HumanColors, WIDTH, ZombieColors } from "../configuration";
 import V2 from "../core/V2";
 import { Game } from "../main";
 import GameObject from "../core/GameObject";
 import GameScene from "../scenes/GameScene";
 import Level from "../Level";
-import { c2i, M, PI } from "../core/utils";
-import { Timer } from "../timer";
+import { M, PI, rand } from "../core/utils";
+import { time, Timer } from "../timer";
 import HumanHead from "../entities/HumanHead";
-import Zombie from "../entities/Zombie";
+import { CharacterType } from "../core/GameEvent";
 
-let _barWidth = WIDTH/4
+let _barWidth = WIDTH / 4
 
-const dialogBgColor = "rgba(10,10,10,.5)";
+const dialogBgColor = "rgba(10,10,10,.6)";
 
 class HUD extends GameObject {
 
@@ -30,16 +30,11 @@ class HUD extends GameObject {
     super();
 
     this._humanIcon = new HumanHead(new V2, new V2(32, 36), HumanColors)
-    this._humanIcon._skinColor = HumanColors._skinColor[Math.random() * HumanColors._skinColor.length >> 0];
-    this._humanIcon._hairColor = getRandomColor(); // HumanColors._hairColor[Math.random() * HumanColors._hairColor.length>>0];
+    this._humanIcon._skinColor = HumanColors._skinColor[rand() * HumanColors._skinColor.length >> 0];
+    this._humanIcon._hairColor = getRandomColor(); 
 
     this._zombieIcon = new HumanHead(new V2, new V2(32, 36), ZombieColors)
-
-    this._zombieIcon._drawMouth = (ctx) => {
-      let z = new Zombie(new V2)
-      z._head._size = new V2(32, 36)
-      z._head._drawMouth(ctx)
-    }
+    this._zombieIcon._mouthType = CharacterType.zombie
 
   }
 
@@ -69,43 +64,53 @@ class HUD extends GameObject {
       ctx.fr(WIDTH / 2 - _barWidth / 2, 10, _barWidth, 20);
       ctx.fs("#d11141");
       ctx.fr(WIDTH / 2 - _barWidth / 2, 10, (scene._player._hp / scene._player._maxHp) * _barWidth, 20);
+
+      // growup bar
+      if (Game._player._growEffectTimer.isSet()) {
+        ctx.fs("#00aedb");
+        ctx.fr(WIDTH / 2 - _barWidth / 2, 35, (1 - Game._player._growEffectTimer.p100()) * _barWidth, 10);
+      }
+
     }
 
     const level = <Level>(scene)._level;
-    ctx.st("LEVEL " + level._number +"/"+ (level._levelState.length-1) , 20, 30, 26);
+    ctx.st("LEVEL " + level._number + "/" + (level._levelState.length - 1), 20, 30, 26);
 
     ctx.textAlign = "right";
-    let x = WIDTH - WIDTH/4, y = 4
-    ctx.st("💎 " + (level._currentDiamonds) + "/" + scene._level._maxDiamonds, x + 180, 35, 26);
+    let x = WIDTH - WIDTH / 4, y = 4
+    ctx.st("💎 " + (level._currentDiamonds) + "/" + scene._level._maxDiamonds, x + 180, 30, 26);
+
+    ctx.st(this.getCrono(), WIDTH - 30, 30, 26);
 
 
-    if (this._showFinal) {
-      ctx.fs(dialogBgColor);
-      ctx.rr(WIDTH/2 - WIDTH*3/4/2, 40, WIDTH*3/4, 300, 30);
-      ctx.ta();
-      ctx.st("YOU ESCAPED!", WIDTH / 2 - 40 / 2, 100, 80 + 3 * M.cos(this._bTimer.p100()));
-      // ctx.st("⭐⭐⭐", WIDTH / 2 - 40 / 2, 180, 80 + 3 * M.sin(this._bTimer.p100()));
-      let line = 40, ref = 120
-      ctx.st("Rescued:" + Game._level._totalHumanRescued , WIDTH / 2 - 40 / 2, ref+line*1, 40);
-      ctx.st("Diamonds:" + Game._level._totalDiamonds , WIDTH / 2 - 40 / 2, ref+line*2, 40);
-      ctx.st("Zombie killed:" + Game._level._totalZombieKilled , WIDTH / 2 - 40 / 2,  ref+line*3, 40);
-      ctx.st("Human killed:" + Game._level._totalHumanKilled , WIDTH / 2 - 40 / 2, ref+line*4, 40);
+    // zombie radar
+    if (Game._player._hasZombieRadar) {
+      let x = WIDTH / 6, y = 30
+      ctx.st("🧭", x + 30, y, 26);
     }
 
-    if (this._showRetry) {
-      ctx.fs(dialogBgColor);
-      ctx.rr(40, HEIGHT / 2 - HEIGHT / 12, WIDTH - 80, HEIGHT / 6, 30);
-      ctx.ta();
-      ctx.st("Press Enter to try again", WIDTH / 2 - 40 / 2, HEIGHT / 2 , HEIGHT / 12 + 3 * M.cos(this._bTimer.p100()));
+    // glasses
+    if (Game._player._hasGlasses) {
+      let x = WIDTH / 6 + 70, y = 24
+      ctx.s()
+      ctx.bp()
+      ctx.fs(glassesColor)
+      ctx.mt(x, y)
+      ctx.arc(x, y, 20, 0, PI * 2 - PI * 2 * Game._player._glassesTimer.p100())
+      ctx.lt(x, y)
+      ctx.cp()
+      ctx.fill()
+      ctx.r()
+
+      ctx.st("🥽", x + 18, y + 6, 26);
     }
 
-    if (this._showMessage) {
-      ctx.fs(dialogBgColor);
-      ctx.rr(WIDTH/2-WIDTH/3, HEIGHT*2 / 12 - 80, 2*WIDTH/3, 100, 30);
-      ctx.ta();
-      ctx.st(this._messageText, WIDTH / 2, HEIGHT*2 / 12 - 40, 30);
-    }
 
+    // key
+    if (Game._player._hasKey) {
+      let x = WIDTH / 6, y = 30
+      ctx.st("🔑", x + 180, y, 26);
+    }
 
     // human head
     if (scene._humans.length > 0) {
@@ -123,96 +128,80 @@ class HUD extends GameObject {
 
       this._zombieIcon._draw(ctx, { _position: new V2(x, y), r: 0 })
 
-      // maxZombies is a wave of zombies is array format
-      const sum = scene._level._maxZombies.reduce((sum, a) => sum + a, 0);
-
-      const total = scene._level._maxZombies[scene._zombieWave - 1]
-      const current = total - scene._zombies.length
-
-      let waves = ""
-      scene._level._maxZombies.forEach((w, index) => {
-        if (index > scene._zombieWave)
-          waves += ","+ w
-      })
-      waves = ""
-
       ctx.textAlign = "left";
-      ctx.st(":" + scene._zombies.length +" "+ waves, x + 20, 30, 26);
-      // ctx.st(":" + current + "/" + total, x + 20, 30, 26);
+      ctx.st(":" + scene._zombies.length, x + 20, 30, 26);
 
     }
+
+    if (this._showMessage) {
+      ctx.fs(dialogBgColor);
+      ctx.rr(WIDTH / 2 - WIDTH / 3, HEIGHT * 2 / 12 - 80, 2 * WIDTH / 3, 100, 30);
+      ctx.ta();
+      ctx.st(this._messageText, WIDTH / 2, HEIGHT * 2 / 12 - 40, 30);
+    }
+
+
+    if (this._showRetry) {
+      ctx.fs(dialogBgColor);
+      ctx.rr(40, HEIGHT / 2 - HEIGHT / 12, WIDTH - 80, HEIGHT / 6, 30);
+      ctx.ta();
+      ctx.st("Press Enter to try again", WIDTH / 2 - 40 / 2, HEIGHT / 2, HEIGHT / 12 + 3 * M.cos(this._bTimer.p100()));
+    }
+
+    if (this._showFinal) {
+
+
+      ctx.fs(dialogBgColor);
+      ctx.rr(WIDTH / 2 - WIDTH * 3 / 4 / 2, 40, WIDTH * 3 / 4, 400, 30);
+      ctx.ta();
+      ctx.st("⭐ YOU ESCAPED! 🎉", WIDTH / 2 - 40 / 2, 100, 80 + 3 * M.cos(this._bTimer.p100()));
+      ctx.st("⏱ " + this.getCrono() + " ⏱", WIDTH / 2 - 40 / 2, 180, 60 + 3 * M.cos(this._bTimer.p100()));
+      let line = 40, ref = 200
+
+      ctx.ta("center")
+      if (level._totalHumans > 0)
+        ctx.st("Rescued: " + (level._playerHumanRescued + " of " + level._totalHumans).padStart(12, ' ') + ((100 * level._playerHumanRescued / level._totalHumans).toFixed(1) + " %").padStart(12, ' '), WIDTH / 2 - 40 / 2, ref + line * 1, 30);
+
+      if (level._totalDiamonds > 0)
+        ctx.st("Diamonds: " + (level._playerDiamonds + " of " + level._totalDiamonds).padStart(12, ' ') + ((100 * level._playerDiamonds / level._totalDiamonds).toFixed(1) + " %").padStart(12, ' '), WIDTH / 2 - 40 / 2, ref + line * 2, 30); // 
+
+      if (level._totalZombies > 0)
+        ctx.st("kills: " + level._playerZombieKills + " zombies and " + level._playerHumanKills + " humans", WIDTH / 2 - 40 / 2, ref + line * 4, 30); // 
+    }
+
 
 
 
     //debug && showDebugValues(ctx);
   }
 
+  private msToTime(s) {
 
-  // _drawHead(ctx: CanvasRenderingContext2D, _position: V2, _size: V2, _sizeHeadHair: V2, colors) {
-  //   ctx.s();
-  //   ctx.globalAlpha = this._opacity;
+    var ms = (s % 1000);
+    s = (s - ms) / 1000;
+    var secs = s % 60;
+    s = (s - secs) / 60;
+    var mins = s % 60;
 
-  //   ctx.tr(
-  //     _position.x,
-  //     _position.y
-  //   );
+    let result = ""
+    if (mins > 0)
+      result += mins.toString().padStart(2, '0') + ':'
 
-  //   ctx.ss("#000");
+    result += secs.toString().padStart(2, '0') + '.' + M.floor(ms / 100).toString().substring(0, 1);
 
-  //   // head
-  //   ctx.bp();
-  //   ctx.fs(colors._skinColor);
-  //   ctx.fr(
-  //     -_size.x / 2,
-  //     0,
-  //     _size.x,
-  //     _size.y
-  //   );
+    return result
+  }
 
-  //   // hair
-  //   let hairSize = _size.y / 20;
+  private getCrono() {
 
-  //   ctx.fs(colors._hairColor);
+    return this.msToTime(Game._cronoAcc);
+  }
 
-  //   ctx.bp();
-  //   ctx.fr(
-  //     -_size.x / 2,
-  //     0,
-  //     _size.x,
-  //     _size.y / 4
-  //   );
-  //   ctx.bp();
-  //   ctx.fr(
-  //     -_size.x / 2,
-  //     0,
-  //     _size.x / 8,
-  //     hairSize * _sizeHeadHair.y
-  //   );
-
-  //   ctx.ss("#000");
-  //   ctx.fs("#000");
-  //   // ctx.lengthw(0);
-  //   const eyeSize = _size.y / 20;
-  //   // right eye
-  //   ctx.bp();
-  //   ctx.ellipse(_size.x / 2.25, _size.y / 2, eyeSize * .8, eyeSize * 2.7, 0, 0, PI * 2);
-  //   ctx.cp();
-  //   ctx.fill();
-
-  //   // left eye
-  //   ctx.bp();
-  //   ctx.ellipse(_size.x / 4, _size.y / 2, eyeSize * 1.1, eyeSize * 3, 0, 0, PI * 2);
-  //   ctx.cp();
-  //   ctx.fill();
-
-  //   ctx.r();
-  // }
-
-  _message(text: string){
+  _message(text: string) {
     this._messageText = text
     this._showMessage = true
   }
-  _hideMessage(){
+  _hideMessage() {
     this._messageText = ""
     this._showMessage = false
   }
@@ -228,8 +217,9 @@ function showDebugValues(ctx: CanvasRenderingContext2D) {
   let i = 2;
   let size = HEIGHT / 40
 
+  ctx.ta("left");
   ctx.fs("#fff");
-  ctx.fr(9, 9 + size * 1, WIDTH / 2, size * 4);
+  ctx.fr(9, 9 + size * 1, WIDTH / 4, size * 4);
 
   if (Game._scene instanceof GameScene) {
     let scene = <GameScene>Game._scene;
@@ -249,12 +239,13 @@ function showDebugValues(ctx: CanvasRenderingContext2D) {
       let diamonds = "diamonds: " + JSON.stringify(Game._level._currentDiamonds);
       let maxZombies = "maxZombies: " + JSON.stringify(Game._level._maxZombies);
       let zombieWave = "zombieWave: " + JSON.stringify(scene._zombieWave);
-     //var tile = scene._player._getTile(currentTilePos);   
+      //var tile = scene._player._getTile(currentTilePos);   
 
       ctx.st(WIDTH + " " + HEIGHT, 10, i++ * size, size);
       ctx.st(diamonds, 10, i++ * size, size);
       ctx.st(maxZombies, 10, i++ * size, size);
       ctx.st(zombieWave, 10, i++ * size, size);
+      ctx.st(Game._level._currentHumanRescued, 10, i++ * size, size);
 
       // ctx.st(vpRect, 10, i++ * size, size);
       // ctx.st(vpRectMid, 10, i++ * size, size);

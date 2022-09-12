@@ -7,8 +7,7 @@ export const TileType = {
   _TRANSPARENT: 0,
   _BASE: 1,
   _XTILE: 2,
-  _LAVA: 3,
-  _HOLE: 4,
+  _HOLE: 3,
 }
 
 export var createTiles = (colors: string[]) => {
