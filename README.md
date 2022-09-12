@@ -18,6 +18,15 @@ There are 10 levels to beat and you have to find the key to unlock the mechanism
 - Espace or mouse click to action
 - Enter to start or retry
 
+Share your Speedrun
+
+Powerups:
+- Glasses make you see in the dark
+- Navigator with zombie radar
+- GrowUp make you immune to zombie bites
+
+Coil members can change player color and get extra powerups
+
 
 ## Thumbnail Art
 DALL-E (https://labs.openai.com)
@@ -36,6 +45,8 @@ Chrome, Safari, FireFox
 - SFX: [ZzFX by Frank Force](https://github.com/KilledByAPixel/ZzFX)
 
 - Roadroller 💗 [from Size overflow (113.54%): 15.115 bytes to 12.877 bytes]
+
+- advzip 💗 for extra bytes
 
 ## Running the game
 
