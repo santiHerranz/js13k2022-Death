@@ -50,7 +50,14 @@ Chrome, Safari, FireFox
 
 ## Running the game
 
+
+
 ```
+node -v
+v16.19.1
+npm -v
+8.19.3
+
 npm i
 npm start
 ```
